@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum VaiTro {
+  HOC_SINH
+  GIAO_VIEN
+  QUAN_TRI_VIEN
+  CMS_ROOT
+}
+
+enum TrangThaiNguoiDung {
+  HOAT_DONG
+  KHOA
+}
+
+enum MucDo {
+  DE
+  TRUNG_BINH
+  KHO
+}
+
+enum LoaiCauHoi {
+  MOT_DAP_AN
+  NHIEU_DAP_AN
+  DUNG_SAI
+  TU_LUAN_NGAN
+}
+
+enum NguonCauHoi {
+  NGAN_HANG
+  AI_GPT
+  AI_GEMINI
+  THU_CONG
+}
+
+enum TrangThaiDuyet {
+  NHAP
+  CHO_DUYET
+  DA_DUYET
+  AN
+  LOAI_BO
+}
+
+enum TrangThaiTrang {
+  NHAP
+  XUAT_BAN
+}
+
+model NguoiDung {
+  id           String              @id @default(cuid())
+  email        String              @unique
+  matKhauHash  String
+  tenHienThi   String?
+  hoTen        String?
+  vaiTro       VaiTro
+  trangThai    TrangThaiNguoiDung  @default(HOAT_DONG)
+  lopHoc       String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  deThiTao     DeThi[]             @relation("DeThiGiaoVien")
+  baiLam       BaiLam[]            @relation("BaiLamHocSinh")
+  lichSuAI     LichSuAI[]
+  nhatKy       NhatKyHeThong[]
+}
+
+model Chuong {
+  id          String    @id @default(cuid())
+  lop         Int
+  ten         String
+  slug        String    @unique
+  thuTu       Int
+  baiHoc      BaiHoc[]
+  createdAt   DateTime  @default(now())
+}
+
+model BaiHoc {
+  id              String           @id @default(cuid())
+  chuongId        String
+  ten             String
+  slug            String           @unique
+  moTa            String?          @db.Text
+  loaiBai         String           @default("SIMULATION")
+  chuDeThi        String?
+  tagsJson        Json?
+  simulationType  String?
+  simulationLabel String?
+  coMoPhong       Boolean          @default(false)
+  coAI            Boolean          @default(true)
+  thuTu           Int
+  chuong          Chuong           @relation(fields: [chuongId], references: [id])
+  phanKienThuc    PhanKienThuc[]
+  cauHoi          CauHoi[]
+  moPhong         MoPhong?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model PhanKienThuc {
+  id              String         @id @default(cuid())
+  baiHocId        String
+  tieuDe          String
+  mucDo           MucDo
+  noiDungMarkdown String         @db.LongText
+  hinhMinhHoa     String?
+  thuTu           Int
+  baiHoc          BaiHoc         @relation(fields: [baiHocId], references: [id])
+}
+
+model MoPhong {
+  id              String   @id @default(cuid())
+  baiHocId        String   @unique
+  loaiMoPhong     String
+  cauHinhJson     Json
+  thamSoJson      Json
+  baiHoc          BaiHoc   @relation(fields: [baiHocId], references: [id])
+}
+
+model CauHoi {
+  id               String         @id @default(cuid())
+  baiHocId         String
+  phanKienThucId   String?
+  nguon            NguonCauHoi
+  mucDo            MucDo
+  loai             LoaiCauHoi
+  noiDung          String         @db.LongText
+  luaChonJson      Json?
+  dapAnDungJson    Json
+  giaiThich        String?        @db.LongText
+  theJson          Json?
+  trangThaiDuyet   TrangThaiDuyet @default(NHAP)
+  soLanSuDung      Int            @default(0)
+  tyLeDung         Float          @default(0)
+  baiHoc           BaiHoc         @relation(fields: [baiHocId], references: [id])
+  createdAt        DateTime       @default(now())
+}
+
+model DeThi {
+  id               String     @id @default(cuid())
+  giaoVienId       String
+  ten              String
+  lop              Int
+  thoiGianPhut     Int
+  qrToken          String     @unique
+  cauHinhJson      Json
+  createdAt        DateTime   @default(now())
+  giaoVien         NguoiDung  @relation("DeThiGiaoVien", fields: [giaoVienId], references: [id])
+  baiLam           BaiLam[]
+}
+
+model BaiLam {
+  id               String     @id @default(cuid())
+  deThiId          String
+  hocSinhId        String
+  diem             Float      @default(0)
+  mucDoHieuBai     Float      @default(0)
+  chiTietJson      Json
+  createdAt        DateTime   @default(now())
+  deThi            DeThi      @relation(fields: [deThiId], references: [id])
+  hocSinh          NguoiDung  @relation("BaiLamHocSinh", fields: [hocSinhId], references: [id])
+}
+
+model LichSuAI {
+  id               String    @id @default(cuid())
+  nguoiDungId      String
+  nhaCungCap       String
+  loaiTacVu        String
+  promptRutGon     String    @db.Text
+  ketQuaRutGon     String    @db.Text
+  createdAt        DateTime  @default(now())
+  nguoiDung        NguoiDung @relation(fields: [nguoiDungId], references: [id])
+}
+
+model CauHinhHeThong {
+  id              String    @id @default(cuid())
+  ma              String    @unique
+  nhom            String
+  ten             String
+  moTa            String?   @db.Text
+  giaTri          Json
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model TrangNoiDung {
+  id              String         @id @default(cuid())
+  tieuDe          String
+  slug            String         @unique
+  moTa            String?        @db.Text
+  noiDungMarkdown String         @db.LongText
+  trangThai       TrangThaiTrang @default(NHAP)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model NhatKyHeThong {
+  id            String   @id @default(cuid())
+  muc           String
+  nhom          String
+  hanhDong      String
+  doiTuong      String?
+  duLieuJson    Json?
+  nguoiDungId   String?
+  createdAt     DateTime @default(now())
+  nguoiDung     NguoiDung? @relation(fields: [nguoiDungId], references: [id])
+
+  @@index([createdAt])
+  @@index([nhom])
+}

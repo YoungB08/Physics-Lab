@@ -1,0 +1,18 @@
+import { Router } from 'express';
+import authRoutes from './auth.routes.js';
+import lessonRoutes from './lesson.routes.js';
+import aiRoutes from './ai.routes.js';
+import chatRoutes from './chat.routes.js';
+import examRoutes from './exam.routes.js';
+import adminRoutes from './admin.routes.js';
+import systemRoutes from './system.routes.js';
+const router = Router();
+router.get('/suc-khoe', (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+router.use('/xac-thuc', authRoutes);
+router.use('/hoc-lieu', lessonRoutes);
+router.use('/ai', aiRoutes);
+router.use('/chat', chatRoutes);
+router.use('/thi-cu', examRoutes);
+router.use('/quan-tri', adminRoutes);
+router.use('/he-thong', systemRoutes);
+export default router;
