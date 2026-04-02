@@ -9,6 +9,12 @@ function resolveApiBase() {
 const API_BASE = resolveApiBase();
 const API = `${API_BASE}/api`;
 
+function normalizeErrorMessage(value: unknown, fallback = 'Co loi xay ra.') {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = useAuthStore.getState().accessToken;
   const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -21,7 +27,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
+  if (!res.ok) throw new Error(normalizeErrorMessage(data.message));
   return data as T;
 }
 
@@ -36,7 +42,7 @@ async function requestBlob(path: string, options: RequestInit = {}): Promise<Blo
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.message || 'Có lỗi xảy ra.');
+    throw new Error(normalizeErrorMessage(data.message));
   }
   return res.blob();
 }
@@ -67,7 +73,6 @@ export const api = {
   chatConversationDetail: (id: string) => request<any>(`/chat/conversations/${id}`),
   sendChatMessage: (id: string, payload: { noiDung: string; provider?: 'auto' | 'gpt' | 'gemini' }) => request<any>(`/chat/conversations/${id}/messages`, { method: 'POST', body: JSON.stringify(payload) }),
   taoDe: (payload: any) => request<any>('/thi-cu/tao-de', { method: 'POST', body: JSON.stringify(payload) }),
-
   examList: () => request<any[]>('/thi-cu/danh-sach'),
   examDetail: (id: string) => request<any>(`/thi-cu/chi-tiet/${id}`),
   examPdf: (id: string) => requestBlob(`/thi-cu/xuat-pdf/${id}`),

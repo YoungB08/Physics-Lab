@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { questionSetJsonSchema } from './ai.provider.js';
 import type { AIProvider, AIRequestInput, AIResponseEnvelope } from './ai.provider.js';
 
 function isGreeting(text: string) {
@@ -60,9 +61,36 @@ function paragraphsFromText(text: string) {
   return text.split(/\n+/).map((line: string) => line.trim()).filter(Boolean);
 }
 
+function questionGenerationInstructions(input: AIRequestInput) {
+  const amount = Math.max(1, Number(input.boCanh?.soLuong ?? 5));
+  const level = String(input.boCanh?.mucDo ?? 'TRUNG_BINH');
+  const grade = String(input.boCanh?.lop ?? '');
+  const lessonSlug = String(input.boCanh?.baiHocSlug ?? '');
+  return [
+    'Ban sinh cau hoi trac nghiem Vat ly THPT.',
+    `Tra ve DUNG JSON theo schema, sinh dung ${amount} cau.`,
+    'Khong duoc tra ve markdown, prose, hay key ngoai schema.',
+    'Moi cau phai co 4 lua chon A B C D, 1 dap an dung.',
+    `Muc do yeu cau: ${level}. Lop: ${grade}. Bai hoc: ${lessonSlug}.`,
+    'Noi dung phai la tieng Viet tu nhien, khong mo ta ve schema, khong lap key JSON vao stem.',
+    'Giai thich ngan gon, dung ban chat vat ly.'
+  ].join('\n');
+}
+
+function normalizeStructuredQuestionPayload(payload: any) {
+  const questions = Array.isArray(payload?.generated_questions) ? payload.generated_questions : [];
+  return {
+    title: String(payload?.title || 'Bo cau hoi OpenAI'),
+    summary: String(payload?.summary || ''),
+    generated_questions: questions
+  };
+}
+
 export class OpenAIProvider implements AIProvider {
   async generate(input: AIRequestInput): Promise<AIResponseEnvelope> {
     const started = Date.now();
+    const isQuestionTask = input.loaiTacVu === 'tao_cau_hoi';
+    const amount = Math.max(1, Number(input.boCanh?.soLuong ?? 5));
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -71,16 +99,41 @@ export class OpenAIProvider implements AIProvider {
       },
       body: JSON.stringify({
         model: env.OPENAI_MODEL,
-        instructions: systemInstructions(input),
+        instructions: isQuestionTask ? questionGenerationInstructions(input) : systemInstructions(input),
         input: userPrompt(input),
         max_output_tokens: 700,
         temperature: input.boCanh?.chatMode === 'lesson_1_1' ? 0.7 : 0.35,
-        text: { format: { type: 'text' } }
+        text: isQuestionTask
+          ? {
+              format: {
+                type: 'json_schema',
+                name: 'generated_question_set',
+                schema: questionSetJsonSchema(amount),
+                strict: true
+              }
+            }
+          : { format: { type: 'text' } }
       })
     });
     const json: any = await response.json();
     if (!response.ok) {
       throw new Error(json?.error?.message || 'OpenAI request failed');
+    }
+    if (isQuestionTask) {
+      const payload = normalizeStructuredQuestionPayload(JSON.parse(extractOpenAIText(json) || '{}'));
+      return {
+        loai_tac_vu: input.loaiTacVu,
+        nha_cung_cap: 'gpt',
+        trang_thai: 'thanh_cong',
+        du_lieu: payload,
+        meta: {
+          phien_ban_schema: '1.0',
+          thoi_gian_xu_ly_ms: Date.now() - started,
+          can_kiem_duyet: true,
+          used_external: true,
+          model: env.OPENAI_MODEL
+        }
+      };
     }
     const text = extractOpenAIText(json) || 'KNTech AI chua nhan duoc noi dung phan hoi tu OpenAI.';
     return {

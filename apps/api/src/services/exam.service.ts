@@ -1,6 +1,7 @@
 ﻿import { prisma } from '../config/prisma.js';
 import { runAI } from './ai.service.js';
 import { HttpError, logSystem } from './system.service.js';
+import type { AIGeneratedQuestion } from '../providers/ai.provider.js';
 
 type ExamStatus = 'DRAFT' | 'CONFIRMED' | 'STARTED' | 'STOPPED' | 'LOCKED';
 
@@ -351,8 +352,51 @@ function createStructuredFallbackQuestion(index: number, topic: string, level: '
     noiDung: finalStem,
     luaChonJson: built.options,
     dapAnDungJson: [built.correct],
-    giaiThich: sanitizeExplanation(built.explanation)
+    giaiThich: sanitizeExplanation(built.explanation),
+    loai: 'MOT_DAP_AN',
+    mucDo: level
   };
+}
+
+function extractStructuredAiQuestions(aiResult: any, amount: number, topic: string, level: 'DE' | 'TRUNG_BINH' | 'KHO') {
+  const rawQuestions = Array.isArray(aiResult?.du_lieu?.generated_questions)
+    ? aiResult.du_lieu.generated_questions as AIGeneratedQuestion[]
+    : [];
+
+  const structured = rawQuestions.slice(0, amount).map((item) => {
+    const stem = sanitizeAiStem(item?.stem, `Phát biểu nào đúng nhất về ${topic}?`);
+    const options = normalizeOptions(
+      (Array.isArray(item?.options) ? item.options : []).map((option: any, index: number) => ({
+        key: option?.key || String.fromCharCode(65 + index),
+        text: option?.text || ''
+      }))
+    );
+    if (options.length < 4) return null;
+    const correctAnswers = resolveCorrectAnswerKeys(item?.correctAnswers, options);
+    if (!correctAnswers.length) return null;
+    return {
+      noiDung: stem,
+      luaChonJson: options.map((option) => option.text),
+      dapAnDungJson: correctAnswers,
+      giaiThich: sanitizeExplanation(item?.explanation),
+      loai: item?.kind || 'MOT_DAP_AN',
+      mucDo: item?.level || level
+    };
+  }).filter(Boolean) as Array<{
+    noiDung: string;
+    luaChonJson: string[];
+    dapAnDungJson: string[];
+    giaiThich: string;
+    loai: string;
+    mucDo: string;
+  }>;
+
+  if (structured.length) return structured;
+
+  const aiLines = extractAiQuestionStems(aiResult, amount, `Phát biểu nào đúng nhất về ${topic}?`);
+  return Array.from({ length: amount }).map((_, index) =>
+    createStructuredFallbackQuestion(index, topic, level, aiLines[index])
+  );
 }
 
 function optionKeys(length: number) {
@@ -715,16 +759,19 @@ export async function taoDeThi(payload: {
       loaiTacVu: 'tao_cau_hoi',
       provider: payload.providerAI ?? 'auto',
       noiDung: `Tạo ${remain} câu hỏi ${payload.mucDo} cho chủ đề ${topic}`,
-      boCanh: { lop: payload.lop, baiHocSlug: baiHoc?.slug, soLuong: remain }
+      boCanh: { lop: payload.lop, baiHocSlug: baiHoc?.slug, baiHocTen: baiHoc?.ten, soLuong: remain, mucDo: payload.mucDo }
     }, payload.giaoVienId);
 
-    const aiLines = extractAiQuestionStems(aiResult, remain, `Phát biểu nào đúng nhất về ${topic}?`);
-    const generated = Array.from({ length: remain }).map((_, index) => ({
+    const generatedDrafts = extractStructuredAiQuestions(aiResult, remain, topic, payload.mucDo);
+    const generated = generatedDrafts.map((question) => ({
       baiHocId: baiHoc?.id,
       nguon: aiResult.nha_cung_cap === 'gemini' ? 'AI_GEMINI' : 'AI_GPT',
-      mucDo: payload.mucDo,
-      loai: 'MOT_DAP_AN',
-      ...createStructuredFallbackQuestion(index, topic, payload.mucDo, aiLines[index]),
+      mucDo: question.mucDo || payload.mucDo,
+      loai: question.loai || 'MOT_DAP_AN',
+      noiDung: question.noiDung,
+      luaChonJson: question.luaChonJson,
+      dapAnDungJson: question.dapAnDungJson,
+      giaiThich: question.giaiThich,
       trangThaiDuyet: 'CHO_DUYET'
     }));
 

@@ -1,16 +1,20 @@
-import type { AIProvider, AIRequestInput, AIResponseEnvelope } from './ai.provider.js';
+import type { AIGeneratedQuestion, AIProvider, AIRequestInput, AIResponseEnvelope } from './ai.provider.js';
 
 function isGreeting(text: string) {
   const normalized = text.trim().toLowerCase();
-  return ['hi', 'hello', 'helo', 'hey', 'chao', 'chào', 'xin chao', 'xin chào'].includes(normalized);
+  return ['hi', 'hello', 'helo', 'hey', 'chao', 'xin chao'].includes(normalized);
 }
 
 function contextLine(input: AIRequestInput) {
-  const lesson = typeof input.boCanh?.lesson === 'string' ? input.boCanh?.lesson : undefined;
-  const topic = typeof input.boCanh?.topic === 'string' ? input.boCanh?.topic : undefined;
-  const simType = typeof input.boCanh?.simulationType === 'string' ? input.boCanh?.simulationType : undefined;
-  const tail = [lesson ? `Bài: ${lesson}` : null, topic ? `Chủ đề: ${topic}` : null, simType ? `Mô phỏng: ${simType}` : null].filter(Boolean).join(' · ');
-  return tail ? `Ngữ cảnh: ${tail}` : '';
+  const lesson = typeof input.boCanh?.lesson === 'string' ? input.boCanh.lesson : undefined;
+  const topic = typeof input.boCanh?.topic === 'string' ? input.boCanh.topic : undefined;
+  const simType = typeof input.boCanh?.simulationType === 'string' ? input.boCanh.simulationType : undefined;
+  const tail = [
+    lesson ? `Bai: ${lesson}` : null,
+    topic ? `Chu de: ${topic}` : null,
+    simType ? `Mo phong: ${simType}` : null
+  ].filter(Boolean).join(' | ');
+  return tail ? `Ngu canh: ${tail}` : '';
 }
 
 function buildTheoryExplanation(input: AIRequestInput) {
@@ -18,85 +22,103 @@ function buildTheoryExplanation(input: AIRequestInput) {
   const ctx = contextLine(input);
   const lines = [
     ctx,
-    `Yêu cầu: ${text}`,
+    `Yeu cau: ${text}`,
     '',
-    '## Khung giải thích chuẩn THPT',
-    '- **Bản chất**: Nêu hiện tượng/ý nghĩa vật lý trước, tránh nhảy thẳng vào công thức.',
-    '- **Công thức lõi**: Chọn 1–2 công thức gốc và điều kiện áp dụng.',
-    '- **Suy luận**: Chỉ ra biến nào tăng/giảm, chiều/dấu (nếu là đại lượng véc tơ).',
-    '- **Kết luận**: Nêu câu chốt và cách kiểm tra nhanh bằng ước lượng/thứ nguyên.',
+    '## Khung giai thich chuan THPT',
+    '- Ban chat: neu hien tuong va y nghia vat ly truoc khi thay cong thuc.',
+    '- Cong thuc loi: chon 1-2 cong thuc goc va dieu kien ap dung.',
+    '- Suy luan: chi ra dai luong nao tang giam, dau va chieu neu co.',
+    '- Ket luan: neu cau chot va cach kiem tra nhanh bang truc giac vat ly.',
     '',
-    '## Sai lầm thường gặp',
-    '- Nhầm điều kiện áp dụng công thức hoặc sai đơn vị.',
-    '- Nhầm dấu/chiều khi chiếu lên trục hoặc khi quy ước quang học.',
+    '## Sai lam thuong gap',
+    '- Nhap dieu kien ap dung cong thuc hoac sai don vi.',
+    '- Nhap dau va chieu khi chieu len truc hoac khi quy uoc.',
     '',
-    '## Gợi ý tự kiểm',
-    '- Đổi toàn bộ về SI.',
-    '- Kiểm tra thứ nguyên sau mỗi biến đổi.',
-    '- So kết quả với trực giác vật lý (xu hướng đúng chưa?).'
+    '## Goi y tu kiem',
+    '- Doi tat ca ve he SI.',
+    '- Kiem tra thu nguyen sau moi bien doi.',
+    '- So ket qua voi truc giac vat ly.'
   ].filter(Boolean);
+
   return {
-    tieu_de: 'KNTech AI nội bộ (fallback)',
-    tom_tat: 'Đang dùng AI nội bộ: trả lời theo khung chuẩn để bạn vẫn học được đúng cách.',
+    tieu_de: 'KNTech AI noi bo (fallback)',
+    tom_tat: 'Dang dung AI noi bo de tra loi theo khung hoc tap co ban.',
     noi_dung_chinh: lines,
-    goi_y: ['Nếu bạn cấu hình API key GPT/Gemini, hệ thống sẽ trả lời chi tiết hơn theo từng bài.'],
-    dap_an: 'Phụ thuộc dữ kiện bài toán/câu hỏi cụ thể.',
+    goi_y: ['Neu cau hinh API key GPT hoac Gemini, he thong se tra loi chi tiet hon.'],
+    dap_an: 'Phu thuoc du kien bai toan cu the.',
     giai_thich: lines.join('\n')
   };
 }
 
 function buildSimulationExplanation(input: AIRequestInput) {
   const ctx = contextLine(input);
-  const simType = typeof input.boCanh?.simulationType === 'string' ? input.boCanh?.simulationType : 'default';
+  const simType = typeof input.boCanh?.simulationType === 'string' ? input.boCanh.simulationType : 'default';
   const params = input.boCanh?.simulationParams;
   const config = input.boCanh?.simulationConfig;
   const text = input.noiDung.trim();
   const lines = [
     ctx,
     '',
-    '## Mục tiêu của mô phỏng',
-    '- Nhìn **xu hướng** khi đổi 1 tham số (tăng/giảm, tuyến tính/phi tuyến).',
-    '- Liên hệ trực tiếp giữa “tham số mô phỏng” và “biến trong công thức”.',
+    '## Muc tieu cua mo phong',
+    '- Nhin xu huong khi doi 1 tham so.',
+    '- Lien he truc tiep giua tham so mo phong va bien trong cong thuc.',
     '',
-    '## Cách thao tác đúng (để học ra quy luật)',
-    '- Đổi **một** tham số mỗi lần, giữ các tham số còn lại cố định.',
-    '- Dự đoán trước → chạy mô phỏng → so với dự đoán → giải thích chênh lệch.',
+    '## Cach thao tac dung',
+    '- Chi doi mot tham so moi lan, giu cac tham so con lai co dinh.',
+    '- Du doan truoc, chay mo phong, so voi du doan, roi giai thich.',
     '',
-    `## Cấu hình mô phỏng (đọc nhanh)\n- type: \`${simType}\`\n- params: \`${JSON.stringify(params ?? {}, null, 0)}\`\n- config: \`${JSON.stringify(config ?? {}, null, 0)}\``,
+    `## Cau hinh mo phong\n- type: \`${simType}\`\n- params: \`${JSON.stringify(params ?? {}, null, 0)}\`\n- config: \`${JSON.stringify(config ?? {}, null, 0)}\``,
     '',
-    '## Gợi ý quan sát theo scene',
-    '- **Vị trí/độ cao**: theo dõi theo thời gian để rút ra dạng \(x(t)\), \(h(t)\).',
-    '- **Vectơ**: chú ý hướng mũi tên (v, a, F) và mối quan hệ \(\\vec{F}_{net} = m\\vec{a}\).',
-    '- **Quỹ đạo**: xem quỹ đạo tròn/helix và đại lượng hướng tâm/hướng trục.',
+    '## Goi y quan sat',
+    '- Theo doi vi tri, do cao, van toc va gia toc theo thoi gian.',
+    '- Chu y huong cua cac vector va moi quan he giua luc va gia toc.',
+    '- Quan sat quy dao de rut ra quy luat.',
     '',
-    '## Bẫy hay gặp khi học bằng mô phỏng',
-    '- Đổi nhiều tham số cùng lúc → không kết luận được quy luật.',
-    '- Nhìn “đẹp mắt” nhưng không gắn vào công thức → học không chắc.',
+    '## Bay thuong gap',
+    '- Doi nhieu tham so cung luc nen khong ket luan duoc.',
+    '- Nhin hieu ung nhung khong gan vao cong thuc.',
     '',
-    `## Câu hỏi dẫn dắt (tự trả lời)\n- Nếu tăng tham số chính lên 2 lần, đại lượng quan sát tăng bao nhiêu lần?\n- Có ngưỡng/điều kiện nào làm hiện tượng “đổi chế độ” không?\n- Mô phỏng đang giả thiết lý tưởng gì (bỏ qua ma sát, cản, …)?`,
-    '',
-    `Ghi chú: ${text || 'Bạn có thể hỏi: “Mình cần quan sát gì trong mô phỏng này để làm trắc nghiệm nhanh?”'}`
+    `Ghi chu: ${text || 'Ban co the hoi tiep can quan sat gi de lam trac nghiem nhanh.'}`
   ].filter(Boolean);
+
   return {
-    tieu_de: 'KNTech AI nội bộ (giải thích mô phỏng)',
-    tom_tat: 'Hướng dẫn quan sát mô phỏng theo tham số và bám sát công thức.',
+    tieu_de: 'KNTech AI noi bo (giai thich mo phong)',
+    tom_tat: 'Huong dan quan sat mo phong theo tham so va cong thuc.',
     noi_dung_chinh: lines,
-    goi_y: ['Nếu cần, hãy hỏi tiếp: “Tham số nào tương ứng với biến nào trong công thức?”'],
-    dap_an: 'Mục tiêu là rút ra quy luật, không phải một con số cố định.',
+    goi_y: ['Neu can, hay hoi tham so nao ung voi bien nao trong cong thuc.'],
+    dap_an: 'Muc tieu la rut ra quy luat, khong phai mot con so co dinh.',
     giai_thich: lines.join('\n')
   };
 }
 
 function buildQuestions(input: AIRequestInput) {
-  const base = String(input.boCanh?.baiHocSlug ?? 'chu-de-tong-hop');
+  const base = String(input.boCanh?.baiHocTen ?? input.boCanh?.baiHocSlug ?? 'chu de tong hop');
   const amount = Number(input.boCanh?.soLuong ?? 5);
+  const level = String(input.boCanh?.mucDo ?? 'TRUNG_BINH') as 'DE' | 'TRUNG_BINH' | 'KHO';
+  const generated_questions: AIGeneratedQuestion[] = Array.from({ length: amount }).map((_, i) => ({
+    stem: `Phat bieu nao dung nhat ve ${base} o cau ${i + 1}?`,
+    level,
+    kind: 'MOT_DAP_AN',
+    options: [
+      { key: 'A', text: `${base} can duoc xet dung theo ban chat vat ly va dieu kien ap dung.` },
+      { key: 'B', text: `${base} luon dung trong moi truong hop ma khong can xet du kien.` },
+      { key: 'C', text: `${base} chi can nho cong thuc, khong can xet gia thiet bai toan.` },
+      { key: 'D', text: `${base} khong phu thuoc mo hinh va gioi han ap dung.` }
+    ],
+    correctAnswers: ['A'],
+    explanation: `Dap an dung la A vi can bam dung ban chat vat ly va dieu kien ap dung cua ${base}.`
+  }));
+
   return {
-    tieu_de: `Sinh ${amount} câu hỏi cho ${base}`,
-    tom_tat: 'Đã tạo bộ câu hỏi gợi ý bằng AI nội bộ.',
-    noi_dung_chinh: Array.from({ length: amount }).map((_, i) => `Câu ${i + 1}: Phát biểu nào đúng với nội dung ${base}?`),
-    goi_y: ['Có thể lưu vào ngân hàng câu hỏi và chỉnh sửa trong CMS.'],
+    title: `Bo cau hoi ${base}`,
+    summary: `Da sinh ${amount} cau hoi theo schema chuan.`,
+    generated_questions,
+    tieu_de: `Sinh ${amount} cau hoi cho ${base}`,
+    tom_tat: 'Da tao bo cau hoi goi y bang AI noi bo.',
+    noi_dung_chinh: Array.from({ length: amount }).map((_, i) => `Cau ${i + 1}: Phat bieu nao dung voi noi dung ${base}?`),
+    goi_y: ['Co the luu vao ngan hang cau hoi va chinh sua trong CMS.'],
     dap_an: 'A',
-    giai_thich: 'Đây là bộ câu hỏi gợi ý tự động, giáo viên nên rà soát trước khi dùng chính thức.'
+    giai_thich: 'Day la bo cau hoi goi y tu dong, giao vien nen ra soat truoc khi dung chinh thuc.'
   };
 }
 
@@ -148,9 +170,10 @@ export class LocalAIProvider implements AIProvider {
         ? buildQuestions(input)
         : input.loaiTacVu === 'giai_bai' && input.boCanh?.chatMode === 'lesson_1_1'
           ? buildLessonChat(input)
-        : input.loaiTacVu === 'giai_thich_mo_phong'
-          ? buildSimulationExplanation(input)
-          : buildTheoryExplanation(input);
+          : input.loaiTacVu === 'giai_thich_mo_phong'
+            ? buildSimulationExplanation(input)
+            : buildTheoryExplanation(input);
+
     return {
       loai_tac_vu: input.loaiTacVu,
       nha_cung_cap: 'local',
