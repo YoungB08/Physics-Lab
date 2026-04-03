@@ -14,6 +14,7 @@ const createExamSchema = z.object({
   cheDo: z.enum(['NGAN_HANG', 'AI', 'KEP']),
   baiHocSlug: z.string().optional(),
   providerAI: z.enum(['gpt', 'gemini', 'auto']).optional(),
+  antiCheatEnabled: z.boolean().optional(),
   maxTabSwitch: z.number().int().min(0).max(MAX_TAB_SWITCH_LIMIT).optional(),
   daoCauHoi: z.boolean().optional(),
   fullScreenRequired: z.boolean().optional(),
@@ -28,6 +29,7 @@ const createExamSchema = z.object({
 const updateExamSchema = z.object({
   ten: z.string().min(3).optional(),
   thoiGianPhut: z.number().int().min(5).max(180).optional(),
+  antiCheatEnabled: z.boolean().optional(),
   maxTabSwitch: z.number().int().min(0).max(MAX_TAB_SWITCH_LIMIT).optional(),
   daoCauHoi: z.boolean().optional(),
   fullScreenRequired: z.boolean().optional(),

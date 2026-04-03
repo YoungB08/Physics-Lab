@@ -12,7 +12,7 @@ export function Shell() {
   const [showLegal, setShowLegal] = useState(false);
   const isCms = user?.vaiTro === 'CMS_ROOT';
   const links = [
-    { to: '/', label: `${webAppConfig.brandName} Dashboard`, icon: Home, show: true },
+    { to: '/', label: `Dashboard`, icon: Home, show: true },
     { to: '/chuong-trinh', label: 'Chủ đề mô phỏng', icon: BookOpen, show: true },
     { to: '/hoi-ai', label: `${webAppConfig.brandName} AI`, icon: Brain, show: webAppConfig.features.aiConsole },
     { to: '/chat', label: 'Chat 1-1', icon: MessagesSquare, show: webAppConfig.features.chat },

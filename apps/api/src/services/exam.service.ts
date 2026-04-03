@@ -19,6 +19,7 @@ type ExamConfig = {
   stoppedAt?: string | null;
   lockedAt?: string | null;
   examAccessUrl?: string | null;
+  antiCheatEnabled?: boolean;
   maxTabSwitch?: number;
   daoCauHoi?: boolean;
   fullScreenRequired?: boolean;
@@ -64,6 +65,7 @@ type AttemptSummary = {
   tabSwitchCount: number;
   warningCount: number;
   forcedStopReason: string | null;
+  teacherFlags: Array<{ type: string; message: string; at: string }>;
   integrityEventCount: number;
   integrityEvents: Array<{ type: string; detail?: string | null; at?: string | null }>;
   answersCount: number;
@@ -520,6 +522,7 @@ function sanitizeQuestionSnapshots(raw: unknown): ExamQuestionSnapshot[] {
 function summarizeAttempt(attempt: any, totalQuestions: number): AttemptSummary {
   const detail = attemptDetail(attempt?.chiTietJson);
   const integrityEvents = Array.isArray(detail.integrityEvents) ? detail.integrityEvents : [];
+  const storedTeacherFlags = Array.isArray(detail.teacherFlags) ? detail.teacherFlags : [];
   const answers = detail.answers && typeof detail.answers === 'object' ? detail.answers : {};
 
   return {
@@ -535,6 +538,7 @@ function summarizeAttempt(attempt: any, totalQuestions: number): AttemptSummary 
     tabSwitchCount: Number(detail.tabSwitchCount ?? 0),
     warningCount: Number(detail.warningCount ?? 0),
     forcedStopReason: detail.forcedStopReason ?? null,
+    teacherFlags: storedTeacherFlags.slice(-8),
     integrityEventCount: integrityEvents.length,
     integrityEvents: integrityEvents.slice(-8),
     answersCount: Object.keys(answers).length,
@@ -584,6 +588,22 @@ function attemptDetail(value: any) {
   return (value && typeof value === 'object' ? value : {}) as any;
 }
 
+function teacherFlags(detail: any) {
+  return Array.isArray(detail?.teacherFlags) ? detail.teacherFlags : [];
+}
+
+function appendTeacherFlag(detail: any, flag: { type: string; message: string; at?: string }) {
+  const next = [
+    ...teacherFlags(detail),
+    {
+      type: String(flag.type || 'general'),
+      message: normalizeWhitespace(flag.message || 'Có dấu hiệu bất thường trong bài làm.'),
+      at: flag.at || new Date().toISOString()
+    }
+  ];
+  return next.slice(-20);
+}
+
 function sanitizeAttemptForStudent(attempt: any) {
   const detail = attemptDetail(attempt?.chiTietJson);
   const safeStudentResult = detail.studentResult ? {
@@ -603,6 +623,7 @@ function sanitizeAttemptForStudent(attempt: any) {
       forcedStopReason: detail.forcedStopReason ?? null,
       tabSwitchCount: Number(detail.tabSwitchCount ?? 0),
       warningCount: Number(detail.warningCount ?? 0),
+      teacherFlags: teacherFlags(detail),
       studentResult: safeStudentResult
     }
   };
@@ -690,6 +711,7 @@ function toStudentQuestion(snapshot: ExamQuestionSnapshot, optionMap: { display:
 
 async function forceStopAttempt(attempt: any, reason: string) {
   const detail = attemptDetail(attempt.chiTietJson);
+  const at = new Date().toISOString();
   const updated = await prisma.baiLam.update({
     where: { id: attempt.id },
     data: {
@@ -697,7 +719,54 @@ async function forceStopAttempt(attempt: any, reason: string) {
         ...detail,
         status: 'FORCE_STOPPED',
         forcedStopReason: reason,
-        submittedAt: new Date().toISOString()
+        submittedAt: at,
+        teacherFlags: appendTeacherFlag(detail, {
+          type: 'force-stop',
+          message: reason,
+          at
+        })
+      } as any
+    }
+  });
+  return sanitizeAttemptForStudent(updated);
+}
+
+async function finalizeAttemptSubmission(attempt: any, cfg: ExamConfig, detail: any, extraDetail: Record<string, any> = {}) {
+  const snapshots = sanitizeQuestionSnapshots(cfg.questionSnapshots);
+  const questions = snapshots.length ? snapshots : (await loadQuestionDetails(cfg.danhSachCauHoi ?? [])).map((item: any, index: number) => buildQuestionSnapshot(item, index));
+  const questionIds = Array.isArray(detail.questionOrder) && detail.questionOrder.length ? detail.questionOrder : questions.map((item) => item.id);
+  const questionMap = new Map(questions.map((item) => [item.id, item]));
+  const answers = detail.answers ?? {};
+  let correct = 0;
+  const gradedTeacherOnly = questionIds.map((id: string) => questionMap.get(id)).filter(Boolean).map((q: any) => {
+    const expected = normalizeAnswer(q.correctAnswers);
+    const given = normalizeAnswer(answers[q.id]);
+    const right = JSON.stringify(expected) === JSON.stringify(given);
+    if (right) correct += 1;
+    return { questionId: q.id, answer: given, correct: right, expected, explain: q.explanation ?? null, answerContents: q.answerContents ?? [] };
+  });
+  const diem = questions.length ? Number(((correct / questions.length) * 10).toFixed(2)) : 0;
+  const showDetails = !(cfg.hideResultDetails ?? false);
+  const studentResult = {
+    score: diem,
+    total: questions.length,
+    answered: Object.keys(answers).length,
+    hideResultDetails: !showDetails,
+    details: showDetails ? gradedTeacherOnly : []
+  };
+  const updated = await prisma.baiLam.update({
+    where: { id: attempt.id },
+    data: {
+      diem,
+      chiTietJson: {
+        ...detail,
+        status: 'SUBMITTED',
+        submittedAt: new Date().toISOString(),
+        gradedTeacherOnly,
+        studentResult,
+        scoreRaw: correct,
+        total: questions.length,
+        ...extraDetail
       } as any
     }
   });
@@ -737,6 +806,7 @@ function normalizeExam(exam: any, questions: any[] = []) {
     canShowQr: (cfg.status ?? 'DRAFT') === 'STARTED',
     attempts: Array.isArray(exam.baiLam) ? exam.baiLam.map((attempt: any) => summarizeAttempt(attempt, finalQuestions.length)) : [],
     antiCheat: {
+      enabled: cfg.antiCheatEnabled ?? true,
       maxTabSwitch: cfg.maxTabSwitch ?? 3,
       daoCauHoi: cfg.daoCauHoi ?? true,
       fullScreenRequired: cfg.fullScreenRequired ?? true,
@@ -757,6 +827,7 @@ export async function taoDeThi(payload: {
   cheDo: 'NGAN_HANG' | 'AI' | 'KEP';
   baiHocSlug?: string;
   providerAI?: 'gpt' | 'gemini' | 'auto';
+  antiCheatEnabled?: boolean;
   maxTabSwitch?: number;
   daoCauHoi?: boolean;
   fullScreenRequired?: boolean;
@@ -891,11 +962,13 @@ export async function taoDeThi(payload: {
   const questionSnapshots = selectedQuestions.map((q: any, index: number) => buildQuestionSnapshot(q, index));
 
   const qrToken = `DE-${Date.now()}`;
+  const antiCheatEnabled = payload.antiCheatEnabled ?? true;
   const cfg: ExamConfig = {
-    maxTabSwitch: payload.maxTabSwitch ?? 99,
+    antiCheatEnabled,
+    maxTabSwitch: antiCheatEnabled ? (payload.maxTabSwitch ?? 3) : -1,
     daoCauHoi: payload.daoCauHoi ?? true,
-    fullScreenRequired: payload.fullScreenRequired ?? false,
-    strictAntiCheat: payload.strictAntiCheat ?? false,
+    fullScreenRequired: antiCheatEnabled ? (payload.fullScreenRequired ?? true) : false,
+    strictAntiCheat: antiCheatEnabled ? (payload.strictAntiCheat ?? true) : false,
     hideResultDetails: payload.hideResultDetails ?? false,
     stopReason: null,
     aiBrief: {
@@ -962,17 +1035,19 @@ export async function getExamDetail(user: { id: string; vaiTro: string }, examId
   return normalizeExam(exam, questions.map((item: any, index: number) => teacherQuestionView(buildQuestionSnapshot(item, index))));
 }
 
-export async function updateExamMeta(user: { id: string; vaiTro: string }, examId: string, payload: { ten?: string; thoiGianPhut?: number; maxTabSwitch?: number; daoCauHoi?: boolean; fullScreenRequired?: boolean; strictAntiCheat?: boolean; hideResultDetails?: boolean; questions?: ExamQuestionSnapshot[] }) {
+export async function updateExamMeta(user: { id: string; vaiTro: string }, examId: string, payload: { ten?: string; thoiGianPhut?: number; antiCheatEnabled?: boolean; maxTabSwitch?: number; daoCauHoi?: boolean; fullScreenRequired?: boolean; strictAntiCheat?: boolean; hideResultDetails?: boolean; questions?: ExamQuestionSnapshot[] }) {
   const exam = await getExamByIdOrThrow(examId);
   const cfg = examConfig(exam.cauHinhJson);
   if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'Không có quyền chỉnh đề này.');
   if ((cfg.status ?? 'DRAFT') === 'LOCKED') throw new HttpError(400, 'Đề đã khóa.');
+  const antiCheatEnabled = payload.antiCheatEnabled ?? cfg.antiCheatEnabled ?? true;
   const nextCfg: ExamConfig = {
     ...cfg,
-    maxTabSwitch: payload.maxTabSwitch ?? cfg.maxTabSwitch ?? 99,
+    antiCheatEnabled,
+    maxTabSwitch: antiCheatEnabled ? (payload.maxTabSwitch ?? cfg.maxTabSwitch ?? 3) : -1,
     daoCauHoi: payload.daoCauHoi ?? cfg.daoCauHoi ?? true,
-    fullScreenRequired: payload.fullScreenRequired ?? cfg.fullScreenRequired ?? false,
-    strictAntiCheat: payload.strictAntiCheat ?? cfg.strictAntiCheat ?? false,
+    fullScreenRequired: antiCheatEnabled ? (payload.fullScreenRequired ?? cfg.fullScreenRequired ?? true) : false,
+    strictAntiCheat: antiCheatEnabled ? (payload.strictAntiCheat ?? cfg.strictAntiCheat ?? true) : false,
     hideResultDetails: payload.hideResultDetails ?? cfg.hideResultDetails ?? false,
     questionSnapshots: payload.questions?.length ? sanitizeQuestionSnapshots(payload.questions) : sanitizeQuestionSnapshots(cfg.questionSnapshots)
   };
@@ -1060,6 +1135,7 @@ export async function joinExamRoom(qrToken: string, user: { id: string; vaiTro: 
           questionOrder,
           optionOrders,
           antiCheatSnapshot: {
+            antiCheatEnabled: cfg.antiCheatEnabled ?? true,
             fullScreenRequired: cfg.fullScreenRequired ?? true,
             strictAntiCheat: cfg.strictAntiCheat ?? true,
             hideResultDetails: cfg.hideResultDetails ?? false,
@@ -1094,6 +1170,7 @@ export async function examRoomStatus(qrToken: string) {
   return {
     examId: exam.id,
     status: cfg.status ?? 'DRAFT',
+    antiCheatEnabled: cfg.antiCheatEnabled ?? true,
     stopReason: cfg.stopReason ?? null,
     maxTabSwitch: cfg.maxTabSwitch ?? 3,
     fullScreenRequired: cfg.fullScreenRequired ?? true,
@@ -1127,18 +1204,46 @@ export async function recordTabOut(user: { id: string }, attemptId: string) {
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
   if (detail.status === 'SUBMITTED' || detail.status === 'FORCE_STOPPED') return { tabSwitchCount: Number(detail.tabSwitchCount ?? 0), forced: detail.status === 'FORCE_STOPPED' };
+  if ((cfg.antiCheatEnabled ?? true) === false) {
+    return { tabSwitchCount: Number(detail.tabSwitchCount ?? 0), forced: false, maxTabSwitch: -1, antiCheatEnabled: false };
+  }
   const count = Number(detail.tabSwitchCount ?? 0) + 1;
   const maxTabSwitch = Number(cfg.maxTabSwitch ?? 3);
-  // maxTabSwitch === 0 means "no tab-out allowed".
-  // maxTabSwitch < 0 means "unlimited / disabled anti-tab-out".
-  if (maxTabSwitch >= 0 && count > maxTabSwitch) {
-    const forced = await forceStopAttempt(attempt, `Vượt quá giới hạn rời màn hình (${count}/${maxTabSwitch}).`);
-    await logSystem({ nhom: 'exam', hanhDong: 'force_stop_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, count, maxTabSwitch } });
-    return { tabSwitchCount: count, forced: true, reason: attemptDetail(forced.chiTietJson).forcedStopReason ?? null, maxTabSwitch };
+  const lastTabOutAt = new Date().toISOString();
+  if (maxTabSwitch >= 0 && count >= maxTabSwitch) {
+    const reason = `Hệ thống tự nộp bài do thí sinh rời màn hình lần ${count}. Giáo viên cần kiểm tra dấu hiệu gian lận.`;
+    const nextDetail = {
+      ...detail,
+      tabSwitchCount: count,
+      warningCount: Math.max(Number(detail.warningCount ?? 0), Math.max(maxTabSwitch - 1, 0)),
+      lastTabOutAt,
+      forcedStopReason: reason,
+      teacherFlags: appendTeacherFlag(detail, {
+        type: 'tab-out-auto-submit',
+        message: reason,
+        at: lastTabOutAt
+      })
+    };
+    const submitted = await finalizeAttemptSubmission(attempt, cfg, nextDetail, {
+      autoSubmitted: true,
+      autoSubmittedReason: 'tab-out-limit'
+    });
+    await logSystem({ nhom: 'exam', hanhDong: 'auto_submit_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, count, maxTabSwitch, reason } });
+    return { tabSwitchCount: count, forced: true, autoSubmitted: true, reason, maxTabSwitch, attempt: submitted, antiCheatEnabled: true };
   }
-  await prisma.baiLam.update({ where: { id: attemptId }, data: { chiTietJson: { ...detail, tabSwitchCount: count, warningCount: Number(detail.warningCount ?? 0) + 1, lastTabOutAt: new Date().toISOString() } as any } });
+  await prisma.baiLam.update({
+    where: { id: attemptId },
+    data: {
+      chiTietJson: {
+        ...detail,
+        tabSwitchCount: count,
+        warningCount: Number(detail.warningCount ?? 0) + 1,
+        lastTabOutAt
+      } as any
+    }
+  });
   await logSystem({ nhom: 'exam', hanhDong: 'tab_out', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, count, maxTabSwitch } });
-  return { tabSwitchCount: count, forced: false, maxTabSwitch };
+  return { tabSwitchCount: count, forced: false, maxTabSwitch, antiCheatEnabled: true };
 }
 
 export async function recordIntegrityEvent(user: { id: string }, attemptId: string, payload: { type: string; detail?: string }) {
@@ -1177,46 +1282,10 @@ export async function submitAttempt(user: { id: string }, attemptId: string) {
   if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền nộp bài.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
-  const snapshots = sanitizeQuestionSnapshots(cfg.questionSnapshots);
-  const questions = snapshots.length ? snapshots : (await loadQuestionDetails(cfg.danhSachCauHoi ?? [])).map((item: any, index: number) => buildQuestionSnapshot(item, index));
-  const questionIds = Array.isArray(detail.questionOrder) && detail.questionOrder.length ? detail.questionOrder : questions.map((item) => item.id);
-  const questionMap = new Map(questions.map((item) => [item.id, item]));
   if (detail.status === 'SUBMITTED') return sanitizeAttemptForStudent(attempt);
-  const answers = detail.answers ?? {};
-  let correct = 0;
-  const gradedTeacherOnly = questionIds.map((id: string) => questionMap.get(id)).filter(Boolean).map((q: any) => {
-    const expected = normalizeAnswer(q.correctAnswers);
-    const given = normalizeAnswer(answers[q.id]);
-    const right = JSON.stringify(expected) === JSON.stringify(given);
-    if (right) correct += 1;
-    return { questionId: q.id, answer: given, correct: right, expected, explain: q.explanation ?? null, answerContents: q.answerContents ?? [] };
-  });
-  const diem = questions.length ? Number(((correct / questions.length) * 10).toFixed(2)) : 0;
-  const showDetails = !(cfg.hideResultDetails ?? false);
-  const studentResult = {
-    score: diem,
-    total: questions.length,
-    answered: Object.keys(answers).length,
-    hideResultDetails: !showDetails,
-    details: showDetails ? gradedTeacherOnly : []
-  };
-  const updated = await prisma.baiLam.update({
-    where: { id: attemptId },
-    data: {
-      diem,
-      chiTietJson: {
-        ...detail,
-        status: 'SUBMITTED',
-        submittedAt: new Date().toISOString(),
-        gradedTeacherOnly,
-        studentResult,
-        scoreRaw: correct,
-        total: questions.length
-      } as any
-    }
-  });
-  await logSystem({ nhom: 'exam', hanhDong: 'submit_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, diem } });
-  return sanitizeAttemptForStudent(updated);
+  const updated = await finalizeAttemptSubmission(attempt, cfg, detail);
+  await logSystem({ nhom: 'exam', hanhDong: 'submit_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, diem: updated.diem } });
+  return updated;
 }
 
 export async function thongKeTheoRole(user: { id: string; vaiTro: string }) {

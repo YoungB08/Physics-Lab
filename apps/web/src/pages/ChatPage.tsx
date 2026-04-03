@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { MarkdownMath } from '../components/MarkdownMath';
@@ -43,21 +43,52 @@ export function ChatPage() {
 
   useEffect(() => {
     const lessonSlug = searchParams.get('lesson') || '';
+    const conversationId = searchParams.get('id') || '';
     setSelectedLessonSlug(lessonSlug);
-    api.chatConversations(lessonSlug || undefined).then(setConversations).catch((e) => setError(e.message));
-  }, [searchParams]);
+    setError('');
+
+    let cancelled = false;
+    api.chatConversations(lessonSlug || undefined)
+      .then((list) => {
+        if (cancelled) return;
+        setConversations(Array.isArray(list) ? list : []);
+
+        if (!lessonSlug && !conversationId) {
+          setActiveConversation(null);
+          return;
+        }
+
+        if (lessonSlug && !conversationId) {
+          const lesson = lessons.find((item) => item.slug === lessonSlug) || null;
+          setActiveConversation((prev: any) => prev?.id ? prev : { id: '', baiHoc: lesson, messages: [] });
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, lessons]);
 
   useEffect(() => {
     if (!activeConversationId) {
-      setActiveConversation(null);
+      if (!selectedLessonSlug) {
+        setActiveConversation(null);
+        return;
+      }
+      const lesson = lessons.find((item) => item.slug === selectedLessonSlug) || null;
+      setActiveConversation((prev: any) => prev?.id ? prev : { id: '', baiHoc: lesson, messages: [] });
       return;
     }
+
     setLoading(true);
     api.chatConversationDetail(activeConversationId)
       .then(setActiveConversation)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [activeConversationId]);
+  }, [activeConversationId, selectedLessonSlug, lessons]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -65,7 +96,8 @@ export function ChatPage() {
 
   async function refreshList(nextLessonSlug = selectedLessonSlug) {
     const list = await api.chatConversations(nextLessonSlug || undefined);
-    setConversations(list);
+    setConversations(Array.isArray(list) ? list : []);
+    return list;
   }
 
   async function createConversation(lessonSlug: string, firstMessage?: string) {
@@ -114,7 +146,7 @@ export function ChatPage() {
 
     try {
       const conversation = activeConversation?.id ? activeConversation : await createConversation(selectedLessonSlug, text);
-      const response = await api.sendChatMessage(conversation.id, { noiDung: text, provider: 'auto' });
+      await api.sendChatMessage(conversation.id, { noiDung: text, provider: 'auto' });
       const detail = await api.chatConversationDetail(conversation.id);
       setActiveConversation(detail);
       await refreshList(selectedLessonSlug);
@@ -138,7 +170,7 @@ export function ChatPage() {
 
   return (
     <div className="grid-2 lesson-layout">
-      <div className="card stack">
+      <div className="card stack chat-sidebar-card">
         <div className="row-between wrap-mobile">
           <h3>Cuộc trò chuyện theo bài</h3>
           <button
@@ -157,6 +189,7 @@ export function ChatPage() {
           onChange={(e) => {
             const lessonSlug = e.target.value;
             setSelectedLessonSlug(lessonSlug);
+            setActiveConversation(null);
             setSearchParams((prev) => {
               const params = new URLSearchParams(prev);
               if (lessonSlug) params.set('lesson', lessonSlug);
@@ -174,7 +207,7 @@ export function ChatPage() {
           ))}
         </select>
 
-        <div className="stack">
+        <div className="stack chat-thread-list">
           {conversations.length ? conversations.map((item) => (
             <button
               key={item.id}
@@ -186,15 +219,15 @@ export function ChatPage() {
                 return params;
               })}
             >
-              <strong>{item.tieuDe}</strong>
-              <span>{item.baiHoc?.ten}</span>
+              <strong>{item.tieuDe || 'Chat với AI'}</strong>
+              <span>{item.baiHoc?.ten || 'Bài học chưa xác định'}</span>
               <small>{item.tomTat || 'Chưa có tin nhắn'}</small>
             </button>
           )) : <div className="note-box">Chưa có cuộc trò chuyện nào cho bài học này.</div>}
         </div>
       </div>
 
-      <div className="card stack">
+      <div className="card stack chat-main-card">
         <div className="row-between wrap-mobile">
           <div>
             <h3>{activeConversation?.baiHoc?.ten || 'Chat 1-1 với Nova KNTech'}</h3>
@@ -219,6 +252,7 @@ export function ChatPage() {
               {item.vaiTro === 'user' && <Avatar name="Bạn" variant="gradient" />}
             </div>
           ))}
+          {!activeConversation?.messages?.length && selectedLessonSlug ? <div className="note-box">Chọn cuộc trò chuyện bên trái hoặc bấm tạo chat mới để bắt đầu.</div> : null}
           <div ref={messageEndRef} />
         </div>
 

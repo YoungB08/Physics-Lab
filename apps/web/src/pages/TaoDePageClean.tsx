@@ -40,6 +40,7 @@ type AttemptLog = {
   tabSwitchCount: number;
   warningCount: number;
   forcedStopReason?: string | null;
+  teacherFlags?: { type: string; message: string; at: string }[];
   integrityEventCount: number;
   integrityEvents?: { type: string; detail?: string | null; at?: string | null }[];
   answersCount: number;
@@ -58,6 +59,7 @@ type ExamDraft = {
   questions: QuestionDraft[];
   attempts: AttemptLog[];
   antiCheat: {
+    enabled: boolean;
     maxTabSwitch: number;
     daoCauHoi: boolean;
     fullScreenRequired: boolean;
@@ -102,6 +104,13 @@ function mapToDraft(raw: any): ExamDraft {
           hocSinhTen: cleanText(attempt?.hocSinhTen),
           hocSinhEmail: cleanText(attempt?.hocSinhEmail),
           forcedStopReason: cleanText(attempt?.forcedStopReason),
+          teacherFlags: Array.isArray(attempt?.teacherFlags)
+            ? attempt.teacherFlags.map((flag: any) => ({
+                type: cleanText(flag?.type),
+                message: cleanText(flag?.message),
+                at: cleanText(flag?.at)
+              })).filter((flag: any) => flag.message)
+            : [],
           integrityEvents: Array.isArray(attempt?.integrityEvents)
             ? attempt.integrityEvents.map((event: any) => ({
                 ...event,
@@ -112,12 +121,13 @@ function mapToDraft(raw: any): ExamDraft {
             : []
         }))
       : [],
-    antiCheat: raw.antiCheat || {
-      maxTabSwitch: 3,
-      daoCauHoi: true,
-      fullScreenRequired: true,
-      strictAntiCheat: true,
-      hideResultDetails: true
+    antiCheat: {
+      enabled: Boolean(raw?.antiCheat?.enabled ?? true),
+      maxTabSwitch: Number(raw?.antiCheat?.maxTabSwitch ?? 3),
+      daoCauHoi: Boolean(raw?.antiCheat?.daoCauHoi ?? true),
+      fullScreenRequired: Boolean(raw?.antiCheat?.fullScreenRequired ?? true),
+      strictAntiCheat: Boolean(raw?.antiCheat?.strictAntiCheat ?? true),
+      hideResultDetails: Boolean(raw?.antiCheat?.hideResultDetails ?? true)
     },
     questions: Array.isArray(raw.questions)
       ? raw.questions.map((q: any, index: number) => ({
@@ -149,6 +159,7 @@ export function TaoDePageClean() {
     soLuongCau: 5,
     mucDo: 'TRUNG_BINH',
     baiHocSlug: '',
+    antiCheatEnabled: true,
     daoCauHoi: true,
     fullScreenRequired: true,
     strictAntiCheat: true,
@@ -217,6 +228,10 @@ export function TaoDePageClean() {
       const res = await api.taoDe({
         ...form,
         ten: cleanText(form.ten, 'Kiểm tra Vật lý'),
+        antiCheatEnabled: form.antiCheatEnabled,
+        maxTabSwitch: form.antiCheatEnabled ? 3 : undefined,
+        fullScreenRequired: form.antiCheatEnabled ? form.fullScreenRequired : false,
+        strictAntiCheat: form.antiCheatEnabled ? form.strictAntiCheat : false,
         cheDo: 'AI',
         providerAI: 'auto'
       });
@@ -239,10 +254,11 @@ export function TaoDePageClean() {
       await api.updateExam(draft.id, {
         ten: draft.ten,
         thoiGianPhut: draft.thoiGianPhut,
-        maxTabSwitch: draft.antiCheat.maxTabSwitch,
+        antiCheatEnabled: draft.antiCheat.enabled,
+        maxTabSwitch: draft.antiCheat.enabled ? draft.antiCheat.maxTabSwitch : undefined,
         daoCauHoi: draft.antiCheat.daoCauHoi,
-        fullScreenRequired: draft.antiCheat.fullScreenRequired,
-        strictAntiCheat: draft.antiCheat.strictAntiCheat,
+        fullScreenRequired: draft.antiCheat.enabled ? draft.antiCheat.fullScreenRequired : false,
+        strictAntiCheat: draft.antiCheat.enabled ? draft.antiCheat.strictAntiCheat : false,
         hideResultDetails: draft.antiCheat.hideResultDetails,
         questions: draft.questions.map((q) => ({
           id: q.id,
@@ -382,13 +398,17 @@ export function TaoDePageClean() {
                 <label className="toggle-chip"><input type="checkbox" checked={form.uuTienLyThuyet} onChange={(e) => setForm({ ...form, uuTienLyThuyet: e.target.checked })} /><span>Ưu tiên lý thuyết rõ bản chất</span></label>
                 <label className="toggle-chip"><input type="checkbox" checked={form.uuTienVanDung} onChange={(e) => setForm({ ...form, uuTienVanDung: e.target.checked })} /><span>Có câu bài tập vận dụng</span></label>
                 <label className="toggle-chip"><input type="checkbox" checked={form.uuTienVanDungCao} onChange={(e) => setForm({ ...form, uuTienVanDungCao: e.target.checked })} /><span>Có câu vận dụng cao</span></label>
+                <label className="toggle-chip"><input type="checkbox" checked={form.antiCheatEnabled} onChange={(e) => setForm({ ...form, antiCheatEnabled: e.target.checked })} /><span>Bật anti-cheat</span></label>
                 <label className="toggle-chip"><input type="checkbox" checked={form.daoCauHoi} onChange={(e) => setForm({ ...form, daoCauHoi: e.target.checked })} /><span>Đảo câu hỏi</span></label>
-                <label className="toggle-chip"><input type="checkbox" checked={form.fullScreenRequired} onChange={(e) => setForm({ ...form, fullScreenRequired: e.target.checked })} /><span>Bắt fullscreen</span></label>
-                <label className="toggle-chip"><input type="checkbox" checked={form.strictAntiCheat} onChange={(e) => setForm({ ...form, strictAntiCheat: e.target.checked })} /><span>Chống gian lận chặt</span></label>
+                <label className="toggle-chip"><input type="checkbox" checked={form.fullScreenRequired} disabled={!form.antiCheatEnabled} onChange={(e) => setForm({ ...form, fullScreenRequired: e.target.checked })} /><span>Bắt fullscreen</span></label>
+                <label className="toggle-chip"><input type="checkbox" checked={form.strictAntiCheat} disabled={!form.antiCheatEnabled} onChange={(e) => setForm({ ...form, strictAntiCheat: e.target.checked })} /><span>Chống gian lận chặt</span></label>
                 <label className="toggle-chip"><input type="checkbox" checked={form.hideResultDetails} onChange={(e) => setForm({ ...form, hideResultDetails: e.target.checked })} /><span>Ẩn đáp án sau thi</span></label>
               </div>
 
-              <div className="note-box">AI sẽ ưu tiên tạo cả câu lý thuyết, câu tính toán và ít nhất một phần câu khó theo cấu hình hiện tại. Bạn có thể giảm bớt bằng cách bỏ chọn các tùy chọn vận dụng hoặc vận dụng cao.</div>
+              <div className="note-box">
+                AI sẽ ưu tiên tạo cả câu lý thuyết, câu tính toán và ít nhất một phần câu khó theo cấu hình hiện tại.
+                {form.antiCheatEnabled ? ' Chế độ anti-cheat đang bật: tab out lần 1-2 cảnh báo, lần 3 hệ thống tự nộp bài và ghi chú nghi vấn cho giáo viên.' : ' Anti-cheat đang tắt, học sinh sẽ không bị tự nộp bài khi rời tab.'}
+              </div>
 
               <LoadingButton className="full" onClick={handleCreate} loading={creating} loadingText="AI đang sinh câu hỏi...">
                 Tạo đề bằng AI
@@ -446,7 +466,7 @@ export function TaoDePageClean() {
                     <span className={`status-pill ${statusColor(draft.status)}`}>{statusLabel(draft.status)}</span>
                     <span className="badge">{draft.questions.length} câu</span>
                     <span className="badge badge-soft">Lớp {draft.lop} · {draft.thoiGianPhut} phút</span>
-                    <span className="badge badge-soft">Tab-out tối đa: {draft.antiCheat.maxTabSwitch}</span>
+                    <span className="badge badge-soft">{draft.antiCheat.enabled ? `Anti-cheat: bật · tự nộp ở lần ${draft.antiCheat.maxTabSwitch}` : 'Anti-cheat: tắt'}</span>
                   </div>
                 </div>
               </div>
@@ -628,7 +648,16 @@ export function TaoDePageClean() {
                       <div key={`${attempt.id}-detail`} className="note-box">
                         <strong>{attempt.hocSinhTen || attempt.hocSinhEmail || attempt.id}</strong>
                         <div>Điểm: {Number(attempt.diem || 0).toFixed(2)} · Tab out: {attempt.tabSwitchCount || 0} · Cheat events: {attempt.integrityEventCount || 0}</div>
-                        {attempt.forcedStopReason ? <div style={{ color: '#b91c1c', marginTop: 6 }}>Lý do khóa: {attempt.forcedStopReason}</div> : null}
+                        {attempt.forcedStopReason ? <div style={{ color: '#b91c1c', marginTop: 6 }}>Ghi chú hệ thống: {attempt.forcedStopReason}</div> : null}
+                        {Array.isArray(attempt.teacherFlags) && attempt.teacherFlags.length ? (
+                          <div style={{ marginTop: 6 }}>
+                            {attempt.teacherFlags.map((flag, index) => (
+                              <div key={`${attempt.id}-flag-${index}`} style={{ color: '#b91c1c' }}>
+                                [{formatDateTime(flag.at)}] {flag.message}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                         {Array.isArray(attempt.integrityEvents) && attempt.integrityEvents.length ? (
                           <div style={{ marginTop: 6 }}>
                             {attempt.integrityEvents.map((event, index) => (

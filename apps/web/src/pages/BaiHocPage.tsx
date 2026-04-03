@@ -159,7 +159,7 @@ export function BaiHocPage() {
           setChatHistory(history.length ? history : fallbackGreeting);
           return;
         }
-      } catch {}
+      } catch { }
       setChatConversationId('');
       setChatHistory(fallbackGreeting);
     }).catch((e) => setError(e.message));
@@ -219,7 +219,7 @@ export function BaiHocPage() {
   const resolvedFallback = resolveVisualTypeForLesson({ ten: data.ten, moTa: data.moTa, chuongTen: data?.chuong?.ten, chuDeThi: data?.chuDeThi });
   const dbType = data.simulationType;
   const lessonBlueprint = resolveLessonSimulationBlueprint({ title: data.ten, slug: data.slug, topic: data?.chuDeThi, type: configuredType || dbType || inferredType });
-  const exactBlueprintType = lessonBlueprint.matched ? lessonBlueprint.simulationType : undefined;
+  const exactBlueprintType = lessonBlueprint?.matched ? lessonBlueprint.simulationType : undefined;
   const configuredSimulationType = configuredType && configuredType !== 'default' ? configuredType : undefined;
   const dbSimulationType = dbType && dbType !== 'default' ? dbType : undefined;
   const inferredSimulationType = inferredType !== 'default' ? inferredType : undefined;
@@ -240,8 +240,8 @@ export function BaiHocPage() {
     lessonSlug: data.slug,
     lessonTitle: data.ten,
     lessonTopic: topicLabel(data),
-    lessonComponents: lessonBlueprint.components,
-    lessonFocus: lessonBlueprint.focus
+    lessonComponents: lessonBlueprint?.components,
+    lessonFocus: lessonBlueprint?.focus
   };
   const simulationParams = data.moPhong?.thamSoJson || preset?.defaultParams || { quality: 'ultra', precision: 'exam-mode', topic: topicLabel(data) };
   const theoryGroups = Object.entries(sectionGroups);

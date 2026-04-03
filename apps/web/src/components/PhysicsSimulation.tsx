@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Play, Pause, Rewind, FastForward, RotateCcw, RotateCw, ArrowUpCircle, ArrowDownCircle, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Play, Pause, Rewind, FastForward, RotateCcw, RotateCw, ArrowUpCircle, ArrowDownCircle, ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from 'lucide-react';
 import { generateLessonIllustration, getVisualProfile } from '../utils/visualProfiles';
 import { resolveLessonScene } from '../utils/lessonSceneRegistry';
 import { resolveLessonSceneSpec } from '../utils/lessonSceneSpecs';
@@ -22,6 +22,11 @@ type CameraState = {
   targetX?: number;
   targetY?: number;
   targetZ?: number;
+};
+
+type ViewportState = {
+  width: number;
+  height: number;
 };
 
 type StageHandles = {
@@ -247,17 +252,17 @@ function cameraBoundsFor(sceneKind: string) {
 function cameraPresetsFor(sceneKind: string, bounds: ReturnType<typeof cameraBoundsFor>): CameraPreset[] {
   const home = defaultCameraState();
   const shared: CameraPreset[] = [
-    { key: 'home', label: 'Mac dinh', ...home },
-    { key: 'top', label: 'Top', yaw: 0.01, pitch: 1.08, distance: clamp(bounds.minDistance + 3, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0, targetZ: 0 },
-    { key: 'side', label: 'Side', yaw: 1.57, pitch: 0.15, distance: clamp(bounds.minDistance + 4, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.4, targetZ: 0 },
-    { key: 'focus', label: 'Focus', yaw: 0.46, pitch: 0.32, distance: clamp(bounds.minDistance + 1.5, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.6, targetZ: 0 }
+    { key: 'home', label: 'Mặc định', ...home },
+    { key: 'top', label: 'Nhìn trên', yaw: 0.01, pitch: 1.08, distance: clamp(bounds.minDistance + 3, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0, targetZ: 0 },
+    { key: 'side', label: 'Nhìn cạnh', yaw: 1.57, pitch: 0.15, distance: clamp(bounds.minDistance + 4, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.4, targetZ: 0 },
+    { key: 'focus', label: 'Tập trung', yaw: 0.46, pitch: 0.32, distance: clamp(bounds.minDistance + 1.5, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.6, targetZ: 0 }
   ];
 
   switch (sceneKind) {
     case 'freeFallTower':
       return [
         shared[0],
-        { key: 'tower', label: 'Theo chieu cao', yaw: 0.28, pitch: 0.78, distance: clamp(bounds.minDistance + 6, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 5, targetZ: 0 },
+        { key: 'tower', label: 'Theo chiều cao', yaw: 0.28, pitch: 0.78, distance: clamp(bounds.minDistance + 6, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 5, targetZ: 0 },
         shared[2],
         shared[3]
       ];
@@ -266,7 +271,7 @@ function cameraPresetsFor(sceneKind: string, bounds: ReturnType<typeof cameraBou
     case 'inclinedPlane':
       return [
         shared[0],
-        { key: 'track', label: 'Doc ray', yaw: 1.5, pitch: 0.2, distance: clamp(bounds.minDistance + 5, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.8, targetZ: 0 },
+        { key: 'track', label: 'Dọc ray', yaw: 1.5, pitch: 0.2, distance: clamp(bounds.minDistance + 5, bounds.minDistance, bounds.maxDistance), targetX: 0, targetY: 0.8, targetZ: 0 },
         shared[1],
         shared[3]
       ];
@@ -275,7 +280,7 @@ function cameraPresetsFor(sceneKind: string, bounds: ReturnType<typeof cameraBou
     case 'eyeOptics':
       return [
         shared[0],
-        { key: 'optics', label: 'Mat phang quang', yaw: 1.57, pitch: 0.05, distance: clamp(bounds.minDistance + 2, bounds.minDistance, bounds.maxDistance), targetX: 0.8, targetY: 0.2, targetZ: 0 },
+        { key: 'optics', label: 'Mặt phẳng quang học', yaw: 1.57, pitch: 0.05, distance: clamp(bounds.minDistance + 2, bounds.minDistance, bounds.maxDistance), targetX: 0.8, targetY: 0.2, targetZ: 0 },
         shared[1],
         shared[3]
       ];
@@ -417,8 +422,8 @@ function sceneAnnotations(sceneKind: string, config: Record<string, unknown> = {
   if (Array.isArray(config.lessonComponents) && config.lessonComponents.length) {
     return (config.lessonComponents as Array<{ label?: string; note?: string }>)
       .map((item) => ({
-        label: cleanUiText(item.label, 'Thanh phan chinh'),
-        note: cleanUiText(item.note, 'Chi tiet nay can duoc doi chieu voi cong thuc va du lieu quan sat.')
+        label: cleanUiText(item.label, 'Thành phần chính'),
+        note: cleanUiText(item.note, 'Chi tiết này cần được đối chiếu với công thức và dữ liệu quan sát.')
       }))
       .filter((item) => item.label.trim() && item.note.trim());
   }
@@ -429,8 +434,8 @@ function sceneAnnotationsSafe(sceneKind: string): SceneAnnotation[] {
   switch (sceneKind) {
     case 'linearRail':
       return [
-        { label: 'Xe va ray', note: 'Vat chuyen dong doc theo ray de quan sat vi tri va huong chuyen dong.' },
-        { label: 'Van toc khong doi', note: 'Trong cac khoang thoi gian bang nhau, vat di duoc cac quang duong bang nhau.' }
+        { label: 'Xe và ray', note: 'Vật chuyển động dọc theo ray để quan sát vị trí và hướng chuyển động.' },
+        { label: 'Vận tốc không đổi', note: 'Trong các khoảng thời gian bằng nhau, vật đi được các quãng đường bằng nhau.' }
       ];
     case 'acceleratedCart':
       return [
@@ -439,128 +444,128 @@ function sceneAnnotationsSafe(sceneKind: string): SceneAnnotation[] {
       ];
     case 'freeFallTower':
       return [
-        { label: 'Vat roi', note: 'Bo qua suc can khong khi, van toc tang deu theo thoi gian.' },
-        { label: 'Thap do cao', note: 'Moc chia cao giup doi chieu quang duong roi va do cao con lai.' }
+        { label: 'Vật rơi', note: 'Bỏ qua sức cản không khí, vận tốc tăng đều theo thời gian.' },
+        { label: 'Tháp đo cao', note: 'Mốc chia cao giúp đối chiếu quãng đường rơi và độ cao còn lại.' }
       ];
     case 'circularRotor':
       return [
-        { label: 'Ban kinh quay', note: 'Ban kinh quyet dinh moi lien he giua omega, v va gia toc huong tam.' },
-        { label: 'Gia toc huong tam', note: 'Vector gia toc luon huong ve tam quay.' }
+        { label: 'Bán kính quay', note: 'Bán kính quyết định mối liên hệ giữa omega, v và gia tốc hướng tâm.' },
+        { label: 'Gia tốc hướng tâm', note: 'Vector gia tốc luôn hướng về tâm quay.' }
       ];
     case 'forceBoard':
       return [
-        { label: 'Luc thanh phan', note: 'Tach cac luc thanh phan de xac dinh hop luc tac dung len vat.' },
-        { label: 'Hop luc', note: 'Hop luc cho biet xu huong chuyen dong va gia toc cua vat.' }
+        { label: 'Lực thành phần', note: 'Tách các lực thành phần để xác định hợp lực tác dụng lên vật.' },
+        { label: 'Hợp lực', note: 'Hợp lực cho biết xu hướng chuyển động và gia tốc của vật.' }
       ];
     case 'newtonCart':
       return [
-        { label: 'Xe thi nghiem', note: 'Dung de doi chieu hop luc, khoi luong va gia toc.' },
-        { label: 'Luc tac dung', note: 'Luc keo va luc can giup nhin ro trang thai can bang hay mat can bang.' }
+        { label: 'Xe thí nghiệm', note: 'Dùng để đối chiếu hợp lực, khối lượng và gia tốc.' },
+        { label: 'Lực tác dụng', note: 'Lực kéo và lực cản giúp nhìn rõ trạng thái cân bằng hay mất cân bằng.' }
       ];
     case 'inclinedPlane':
       return [
-        { label: 'Mat phang nghieng', note: 'Tach trong luc thanh hai thanh phan doc va vuong goc mat phang.' },
-        { label: 'Ma sat', note: 'Luc can xuat hien khi vat co xu huong truot tren mat phang.' }
+        { label: 'Mặt phẳng nghiêng', note: 'Tách trọng lực thành hai thành phần dọc và vuông góc mặt phẳng.' },
+        { label: 'Ma sát', note: 'Lực cản xuất hiện khi vật có xu hướng trượt trên mặt phẳng.' }
       ];
     case 'springOscillator':
       return [
-        { label: 'Vi tri can bang', note: 'Do lech khoi vi tri can bang quyet dinh luc phuc hoi cua lo xo.' },
-        { label: 'Nang luong dao dong', note: 'Dong nang va the nang bien doi qua lai theo chu ki.' }
+        { label: 'Vị trí cân bằng', note: 'Độ lệch khỏi vị trí cân bằng quyết định lực phục hồi của lò xo.' },
+        { label: 'Năng lượng dao động', note: 'Động năng và thế năng biến đổi qua lại theo chu kì.' }
       ];
     case 'pendulum':
       return [
-        { label: 'Goc lech', note: 'Bien do goc nho cho phep ap dung mo hinh dao dong dieu hoa.' },
-        { label: 'Chu ki', note: 'Chu ki phu thuoc chu yeu vao chieu dai day va gia toc trong truong.' }
+        { label: 'Góc lệch', note: 'Biên độ góc nhỏ cho phép áp dụng mô hình dao động điều hòa.' },
+        { label: 'Chu kì', note: 'Chu kì phụ thuộc chủ yếu vào chiều dài dây và gia tốc trọng trường.' }
       ];
     case 'waveTank':
       return [
-        { label: 'Nguon song', note: 'Nguon dao dong tao ra cac mat song lan truyen trong moi truong.' },
-        { label: 'Pha song', note: 'Cac diem cung pha cach nhau mot so nguyen lan buoc song.' }
+        { label: 'Nguồn sóng', note: 'Nguồn dao động tạo ra các mặt sóng lan truyền trong môi trường.' },
+        { label: 'Pha sóng', note: 'Các điểm cùng pha cách nhau một số nguyên lần bước sóng.' }
       ];
     case 'interferenceTank':
       return [
-        { label: 'Hai nguon ket hop', note: 'Hai nguon cung tan so va do lech pha on dinh tao giao thoa.' },
-        { label: 'Van cuc dai cuc tieu', note: 'Hieu duong di quyet dinh vi tri tang cuong hay triet tieu.' }
+        { label: 'Hai nguồn kết hợp', note: 'Hai nguồn cùng tần số và độ lệch pha ổn định tạo giao thoa.' },
+        { label: 'Vân cực đại cực tiểu', note: 'Hiệu đường đi quyết định vị trí tăng cường hay triệt tiêu.' }
       ];
     case 'standingString':
       return [
-        { label: 'Nut song', note: 'Nut la diem luon co bien do bang 0.' },
-        { label: 'Bung song', note: 'Bung la diem co bien do dao dong cuc dai.' }
+        { label: 'Nút sóng', note: 'Nút là điểm luôn có biên độ bằng 0.' },
+        { label: 'Bụng sóng', note: 'Bụng là điểm có biên độ dao động cực đại.' }
       ];
     case 'electricPlates':
       return [
-        { label: 'Ban cuc', note: 'Dien truong deu giua hai ban song song huong tu duong sang am.' },
-        { label: 'Hat mang dien', note: 'Quy dao phu thuoc dau dien tich, van toc dau va cuong do dien truong.' }
+        { label: 'Bản cực', note: 'Điện trường đều giữa hai bản song song hướng từ dương sang âm.' },
+        { label: 'Hạt mang điện', note: 'Quỹ đạo phụ thuộc dấu điện tích, vận tốc đầu và cường độ điện trường.' }
       ];
     case 'coulombCharges':
       return [
-        { label: 'Hai dien tich diem', note: 'Luc Coulomb tang khi dien tich lon hon va khoang cach nho hon.' },
-        { label: 'Huong luc', note: 'Cung dau day nhau, khac dau hut nhau tren duong noi tam.' }
+        { label: 'Hai điện tích điểm', note: 'Lực Coulomb tăng khi điện tích lớn hơn và khoảng cách nhỏ hơn.' },
+        { label: 'Hướng lực', note: 'Cùng dấu đẩy nhau, khác dấu hút nhau trên đường nối tâm.' }
       ];
     case 'ohmCircuit':
       return [
-        { label: 'Nguon va dien tro', note: 'Do lon dong dien thay doi theo I = U/R.' },
-        { label: 'Do thi dai luong', note: 'Theo doi hieu dien the, dong dien va cong suat theo thoi gian.' }
+        { label: 'Nguồn và điện trở', note: 'Độ lớn dòng điện thay đổi theo I = U/R.' },
+        { label: 'Đồ thị đại lượng', note: 'Theo dõi hiệu điện thế, dòng điện và công suất theo thời gian.' }
       ];
     case 'magneticHelix':
       return [
-        { label: 'Van toc ban dau', note: 'Thanh phan song song B giu chuyen dong thang, thanh phan vuong goc tao quay tron.' },
-        { label: 'Luc Lorentz', note: 'Luc tu luon vuong goc voi ca v va B nen khong sinh cong.' }
+        { label: 'Vận tốc ban đầu', note: 'Thành phần song song B giữ chuyển động thẳng, thành phần vuông góc tạo quay tròn.' },
+        { label: 'Lực Lorentz', note: 'Lực từ luôn vuông góc với cả v và B nên không sinh công.' }
       ];
     case 'lensBench':
       return [
-        { label: 'Vat va anh', note: 'Vi tri anh thay doi theo cong thuc 1/f = 1/d + 1/d phay.' },
-        { label: 'Tieu cu', note: 'Tieu cu quyet dinh kha nang hoi tu hay phan ki cua he quang hoc.' }
+        { label: 'Vật và ảnh', note: 'Vị trí ảnh thay đổi theo công thức 1/f = 1/d + 1/d phẩy.' },
+        { label: 'Tiêu cự', note: 'Tiêu cự quyết định khả năng hội tụ hay phân kì của hệ quang học.' }
       ];
     case 'refractionTank':
       return [
-        { label: 'Mat phan cach', note: 'Tia sang doi huong khi di qua hai moi truong co chiet suat khac nhau.' },
-        { label: 'Dinh luat Snell', note: 'n1 sin i = n2 sin r cho phep tinh goc khuc xa.' }
+        { label: 'Mặt phân cách', note: 'Tia sáng đổi hướng khi đi qua hai môi trường có chiết suất khác nhau.' },
+        { label: 'Định luật Snell', note: 'n1 sin i = n2 sin r cho phép tính góc khúc xạ.' }
       ];
     case 'eyeOptics':
       return [
-        { label: 'Thuy tinh the', note: 'Dieu tiet de anh roi dung tren vong mac.' },
-        { label: 'Vong mac', note: 'Noi anh can hien ro de mat quan sat tot.' }
+        { label: 'Thủy tinh thể', note: 'Điều tiết để ảnh rơi đúng trên võng mạc.' },
+        { label: 'Võng mạc', note: 'Nơi ảnh cần hiện rõ để mắt quan sát tốt.' }
       ];
     case 'thermalIsothermal':
       return [
-        { label: 'Nhiet do khong doi', note: 'Trong suot qua trinh, T duoc giu co dinh de doi chieu quan he p-V.' },
-        { label: 'Ap suat va the tich', note: 'Khi V tang thi p giam theo quy luat Boyle-Mariotte.' }
+        { label: 'Nhiệt độ không đổi', note: 'Trong suốt quá trình, T được giữ cố định để đối chiếu quan hệ p-V.' },
+        { label: 'Áp suất và thể tích', note: 'Khi V tăng thì p giảm theo quy luật Boyle-Mariotte.' }
       ];
     case 'thermalIsobaric':
       return [
-        { label: 'Ap suat khong doi', note: 'He duoc dieu khien de giu p khong doi trong khi T bien thien.' },
-        { label: 'Do no nhiet', note: 'The tich tang khi nhiet do tuyet doi tang.' }
+        { label: 'Áp suất không đổi', note: 'Hệ được điều khiển để giữ p không đổi trong khi T biến thiên.' },
+        { label: 'Độ nở nhiệt', note: 'Thể tích tăng khi nhiệt độ tuyệt đối tăng.' }
       ];
     case 'thermalState':
       return [
-        { label: 'Trang thai khi', note: 'Ba dai luong p, V, T rang buoc nhau trong cung mot he.' },
-        { label: 'Bien doi thong so', note: 'Thay doi mot dai luong se lam cac dai luong con lai thay doi.' }
+        { label: 'Trạng thái khí', note: 'Ba đại lượng p, V, T ràng buộc nhau trong cùng một hệ.' },
+        { label: 'Biến đổi thông số', note: 'Thay đổi một đại lượng sẽ làm các đại lượng còn lại thay đổi.' }
       ];
     case 'nuclearCluster':
       return [
-        { label: 'Proton va neutron', note: 'So proton quyet dinh so Z, con tong proton neutron cho so khoi A cua hat nhan.' },
-        { label: 'Do ben hat nhan', note: 'Ti le neutron proton va nang luong lien ket rieng anh huong den do ben cua hat nhan.' }
+        { label: 'Proton và neutron', note: 'Số proton quyết định số Z, còn tổng proton neutron cho số khối A của hạt nhân.' },
+        { label: 'Độ bền hạt nhân', note: 'Tỉ lệ neutron proton và năng lượng liên kết riêng ảnh hưởng đến độ bền của hạt nhân.' }
       ];
     case 'decayChamber':
       return [
-        { label: 'Hat nhan me', note: 'Hat nhan khong ben co the phan ra ngau nhien theo xac suat vi mo.' },
-        { label: 'Buc xa va bo dem', note: 'Theo doi so hat phat ra, hang so phong xa va y nghia cua chu ki ban ra.' }
+        { label: 'Hạt nhân mẹ', note: 'Hạt nhân không bền có thể phân rã ngẫu nhiên theo xác suất vi mô.' },
+        { label: 'Bức xạ và bộ đếm', note: 'Theo dõi số hạt phát ra, hằng số phóng xạ và ý nghĩa của chu kì bán rã.' }
       ];
     case 'nuclearReaction':
       return [
-        { label: 'Hat toi va hat dich', note: 'Phan ung xay ra khi hat toi tuong tac voi hat dich du nang luong hoac dieu kien thich hop.' },
-        { label: 'San pham va nang luong', note: 'Can doi bao toan so khoi, dien tich va nang luong truoc sau phan ung.' }
+        { label: 'Hạt tới và hạt đích', note: 'Phản ứng xảy ra khi hạt tới tương tác với hạt đích đủ năng lượng hoặc điều kiện thích hợp.' },
+        { label: 'Sản phẩm và năng lượng', note: 'Cần đối bảo toàn số khối, điện tích và năng lượng trước sau phản ứng.' }
       ];
     case 'bindingWell':
       return [
-        { label: 'Do hut khoi', note: 'Khoi luong hat nhan nho hon tong khoi luong cac nucleon tu do do co nang luong lien ket.' },
-        { label: 'Gieng the nang', note: 'Hat nam sau trong gieng the cang sau thi lien ket cang ben va kho tach roi.' }
+        { label: 'Độ hụt khối', note: 'Khối lượng hạt nhân nhỏ hơn tổng khối lượng các nucleon tự do do có năng lượng liên kết.' },
+        { label: 'Giếng thế năng', note: 'Hạt nằm sâu trong giếng thế càng sâu thì liên kết càng bền và khó tách rời.' }
       ];
     default:
       return [
-        { label: 'Vat the chinh', note: 'Thanh phan trung tam cua mo phong duoc theo doi bang overlay va metric.' },
-        { label: 'Dai luong can quan sat', note: 'Tap trung vao cac vector, tham so va timeline o ben duoi canvas.' }
+        { label: 'Vật thể chính', note: 'Thành phần trung tâm của mô phỏng được theo dõi bằng overlay và metric.' },
+        { label: 'Đại lượng cần quan sát', note: 'Tập trung vào các vector, tham số và timeline ở bên dưới canvas.' }
       ];
   }
 }
@@ -633,6 +638,231 @@ function enrichOverlays(sceneKind: string, overlays: OverlayChip[], annotations:
   return enriched;
 }
 
+function buildProjectionCamera(camera: CameraState, viewport: ViewportState) {
+  const projectionCamera = new THREE.PerspectiveCamera(48, viewport.width / Math.max(viewport.height, 1), 0.1, 100);
+  const targetX = camera.targetX ?? 0;
+  const targetY = camera.targetY ?? 0;
+  const targetZ = camera.targetZ ?? 0;
+  projectionCamera.position.set(
+    Math.cos(camera.yaw) * Math.cos(camera.pitch) * camera.distance + targetX,
+    Math.sin(camera.pitch) * camera.distance + targetY,
+    Math.sin(camera.yaw) * Math.cos(camera.pitch) * camera.distance + targetZ
+  );
+  projectionCamera.lookAt(targetX, targetY, targetZ);
+  projectionCamera.updateProjectionMatrix();
+  projectionCamera.updateMatrixWorld();
+  return projectionCamera;
+}
+
+function projectWorldPoint(point: THREE.Vector3, projectionCamera: THREE.PerspectiveCamera) {
+  const projected = point.clone().project(projectionCamera);
+  const visible = projected.z >= -1 && projected.z <= 1;
+  return {
+    x: projected.x * 0.5 + 0.5,
+    y: -projected.y * 0.5 + 0.5,
+    visible
+  };
+}
+
+function overlayAnchorPointFor(
+  sceneContext: SceneContext,
+  variant: StageVariant,
+  params: Record<string, number | string>,
+  time: number,
+  overlay: OverlayChip
+) {
+  const key = normalizeSceneLabel(`${overlay.key} ${overlay.label}`);
+  const assembly = sceneContext.sceneAssembly;
+  const anchorX = assembly.orbitAnchor[0];
+  const anchorY = assembly.orbitAnchor[1];
+  const anchorZ = assembly.orbitAnchor[2];
+  const speedTime = time * variant.speedFactor;
+
+  switch (sceneContext.sceneKind) {
+    case 'linearRail': {
+      const cartX = anchorX - 5.6 + ((num(params.v, 4) * speedTime * variant.amplitude) % 11.4);
+      if (key.includes('xe') || key.includes('object')) return new THREE.Vector3(cartX, anchorY + 1.45, anchorZ + 0.18);
+      if (key.includes('ray')) return new THREE.Vector3(cartX - 0.3, anchorY + 0.95, anchorZ);
+      if (key.includes('v ') || key.endsWith(' v') || key.includes('van toc')) return new THREE.Vector3(cartX + 1.35, anchorY + 1.95, anchorZ);
+      if (key.includes('x')) return new THREE.Vector3(cartX, anchorY + 1.2, anchorZ - 0.1);
+      break;
+    }
+    case 'acceleratedCart': {
+      const v0 = num(params.v0, 0.6);
+      const a = num(params.a, 1.4);
+      const cartX = anchorX - 5.8 + ((v0 * speedTime + 0.5 * a * speedTime * speedTime * variant.amplitude) % 11.6);
+      const cartY = anchorY + variant.offsetY * 0.5;
+      if (key.includes('xe') || key.includes('cart') || key.includes('object')) return new THREE.Vector3(cartX, cartY + 0.8, anchorZ);
+      if (key.includes('v ') || key.endsWith(' v') || key.includes('van toc')) return new THREE.Vector3(cartX + 1.15, cartY + 1.55, anchorZ);
+      if (key.includes('a') || key.includes('gia toc')) return new THREE.Vector3(cartX - 0.9, cartY + 1.85, anchorZ);
+      break;
+    }
+    case 'freeFallTower': {
+      const g = num(params.g, 9.81);
+      const local = speedTime % 3.2;
+      const ballX = anchorX + local * num(params.vx, 0.08) + variant.offsetX * 0.35;
+      const ballY = anchorY + 2.9 - 0.5 * (g / 9.81) * local * local * variant.amplitude;
+      const ballZ = anchorZ + Math.sin(local * 2.1) * assembly.motionEnvelope.swingZ;
+      if (key.includes('vat') || key.includes('roi') || key.includes('ball') || key.includes('object')) return new THREE.Vector3(ballX, ballY + 0.75, ballZ);
+      if (key.includes('h') || key.includes('do cao')) return new THREE.Vector3(ballX - 0.8, ballY + 1.65, ballZ);
+      if (key.includes('v') || key.includes('van toc')) return new THREE.Vector3(ballX + 0.95, ballY + 1.15, ballZ);
+      break;
+    }
+    case 'circularRotor': {
+      const radius = 4;
+      const angle = assembly.orbitRotation[1] + speedTime * num(params.omega, 1.6);
+      const rotorX = anchorX + Math.cos(angle) * radius;
+      const rotorZ = anchorZ + Math.sin(angle) * radius;
+      if (key.includes('vat') || key.includes('object') || key.includes('rotor')) return new THREE.Vector3(rotorX, anchorY + 0.75, rotorZ);
+      if (key.includes('omega') || key.includes('toc do goc')) return new THREE.Vector3(anchorX, anchorY + 2.15, anchorZ);
+      if (key.includes('r')) return new THREE.Vector3(anchorX + radius * 0.55, anchorY + 0.15, anchorZ + radius * 0.35);
+      break;
+    }
+    case 'springMass': {
+      const displacement = Math.sin(speedTime * Math.sqrt(Math.max(num(params.k, 25) / Math.max(num(params.m, 0.5), 0.1), 0.1))) * num(params.A, 6) * 0.18;
+      const massX = anchorX + 3.1 + displacement;
+      if (key.includes('vat') || key.includes('mass') || key.includes('lo xo') || key.includes('object')) return new THREE.Vector3(massX, anchorY + 0.95, anchorZ);
+      if (key.includes('x') || key.includes('li do')) return new THREE.Vector3(massX, anchorY + 1.7, anchorZ);
+      if (key.includes('k') || key.includes('luc')) return new THREE.Vector3(anchorX - 0.8, anchorY + 1.45, anchorZ);
+      break;
+    }
+    case 'pendulumArc': {
+      const theta = assembly.orbitRotation[2] + Math.sin(speedTime * 1.45) * THREE.MathUtils.degToRad(num(params.angle, 18));
+      const bobX = anchorX + Math.sin(theta) * 2.82;
+      const bobY = anchorY + 0.4 - Math.cos(theta) * 2.82;
+      if (key.includes('qua') || key.includes('bob') || key.includes('vat') || key.includes('object')) return new THREE.Vector3(bobX, bobY + 0.75, anchorZ);
+      if (key.includes('theta') || key.includes('goc')) return new THREE.Vector3(anchorX + Math.sin(theta) * 1.4, anchorY + 2.2, anchorZ);
+      if (key.includes('t') || key.includes('chu ki')) return new THREE.Vector3(anchorX - 1.25, anchorY + 1.5, anchorZ);
+      break;
+    }
+    case 'travelingWave': {
+      const lambda = Math.max(num(params.lambda, 4), 1);
+      const amplitude = num(params.A, 2) * 0.18;
+      const waveSpeed = num(params.v, 6) * 0.22;
+      const omega = (2 * Math.PI * waveSpeed) / lambda;
+      if (key.includes('nguon') || key.includes('source')) return new THREE.Vector3(-6.8, -0.2, 0);
+      if (key.includes('song') || key.includes('rope') || key.includes('wave')) return new THREE.Vector3(0.5, amplitude * Math.sin(-omega * speedTime) - 0.2, 0);
+      if (key.includes('lambda') || key.includes('buoc song')) return new THREE.Vector3(2.8, 1.35, 0);
+      break;
+    }
+    case 'interferenceField': {
+      if (key.includes('s1')) return new THREE.Vector3(-2.8, 0.35, 0);
+      if (key.includes('s2')) return new THREE.Vector3(2.8, 0.35, 0);
+      if (key.includes('delta') || key.includes('duong di')) return new THREE.Vector3(0, 2.25, 0);
+      break;
+    }
+    case 'standingWave': {
+      const amplitude = num(params.A, 3) * 0.16;
+      if (key.includes('nut') || key.includes('node')) return new THREE.Vector3(-3.5, -0.1, 0);
+      if (key.includes('bung') || key.includes('antinode')) return new THREE.Vector3(0, amplitude + 0.1, 0);
+      if (key.includes('lambda')) return new THREE.Vector3(3.2, 1.2, 0);
+      break;
+    }
+    case 'electricPlates': {
+      const particleX = anchorX + Math.sin(speedTime * 1.8) * 2.1;
+      const particleY = anchorY + Math.cos(speedTime * 1.1) * 1.2;
+      if (key.includes('hat') || key.includes('particle') || key.includes('q')) return new THREE.Vector3(particleX, particleY + 0.65, anchorZ);
+      if (key.includes('e') || key.includes('field') || key.includes('dien truong')) return new THREE.Vector3(anchorX + 2.8, anchorY + 2.1, anchorZ);
+      break;
+    }
+    case 'coulombCharges': {
+      if (key.includes('q1')) return new THREE.Vector3(-3, 0.7, 0);
+      if (key.includes('q2')) return new THREE.Vector3(3, 0.7, 0);
+      if (key === 'r' || key.includes('khoang cach')) return new THREE.Vector3(0, 1.7, 0);
+      break;
+    }
+    case 'ohmCircuit': {
+      const loadY = anchorY + Math.sin(speedTime * 4) * 0.26;
+      if (key.includes('nguon') || key.includes('source')) return new THREE.Vector3(-4.1, 1.2, 0);
+      if (key.includes('tai') || key.includes('load') || key.includes('bong')) return new THREE.Vector3(2.4, loadY + 1.15, 0);
+      if (key === 'i' || key.includes('dong dien')) return new THREE.Vector3(0.2, 2.15, 0);
+      break;
+    }
+    case 'lensBench': {
+      const objectX = -4.8 + Math.sin(speedTime * 0.55) * 0.8;
+      const f = Math.max(num(params.f, 12), 2) * 0.22;
+      const d = Math.max(Math.abs(objectX), f + 0.4);
+      const imageX = clamp((f * d) / Math.max(d - f, 0.2), 1.8, 5.6);
+      if (key.includes('vat') || key.includes('object')) return new THREE.Vector3(objectX, 0.95, 0);
+      if (key.includes('thau kinh') || key.includes('lens')) return new THREE.Vector3(0, 1.85, 0);
+      if (key.includes('anh') || key.includes('image')) return new THREE.Vector3(imageX, 1.05, 0);
+      break;
+    }
+    case 'eyeOptics': {
+      const defect = Math.sin(speedTime * 0.55) * 0.9;
+      const focusX = 2.15 + defect;
+      if (key.includes('mat') || key.includes('lens') || key.includes('thuy tinh')) return new THREE.Vector3(0.1, 1.25, 0);
+      if (key.includes('anh') || key.includes('vong mac') || key.includes('focus')) return new THREE.Vector3(focusX, 0.5, 0);
+      break;
+    }
+    case 'nuclearCluster': {
+      return new THREE.Vector3(anchorX, anchorY + 1.05, anchorZ);
+    }
+    case 'decayChamber': {
+      const particleX = anchorX + ((speedTime * 1.4) % 3.2);
+      const particleY = anchorY + Math.sin(speedTime * 5) * 0.7;
+      const particleZ = anchorZ + Math.cos(speedTime * 4) * 0.6;
+      if (key.includes('hat') || key.includes('particle') || key.includes('phan ra')) return new THREE.Vector3(particleX, particleY + 0.75, particleZ);
+      if (key.includes('detector') || key.includes('buong')) return new THREE.Vector3(anchorX + 2.8, anchorY + 1.6, anchorZ);
+      break;
+    }
+    case 'nuclearReaction': {
+      const particleX = anchorX - 4.2 + ((speedTime * 3.6) % 5.4);
+      if (key.includes('toi') || key.includes('target') || key.includes('hat')) return new THREE.Vector3(particleX, anchorY + 0.8, anchorZ);
+      if (key.includes('san pham') || key.includes('nang luong')) return new THREE.Vector3(anchorX + 2.5, anchorY + 1.2, anchorZ);
+      break;
+    }
+    case 'bindingWell': {
+      const radius = 1.45 - 0.65 * (0.5 + 0.5 * Math.sin(speedTime * 0.9));
+      const px = anchorX + Math.cos(speedTime * 2.4) * radius;
+      const py = anchorY - 0.9 + 0.85 * Math.cos(speedTime * 0.9);
+      const pz = anchorZ + Math.sin(speedTime * 2.4) * radius;
+      if (key.includes('gieng') || key.includes('well')) return new THREE.Vector3(anchorX, anchorY + 1.4, anchorZ);
+      if (key.includes('hat') || key.includes('particle') || key.includes('lien ket')) return new THREE.Vector3(px, py + 0.8, pz);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return null;
+}
+
+function projectOverlayItems(
+  sceneContext: SceneContext,
+  variant: StageVariant,
+  overlays: OverlayChip[],
+  params: Record<string, number | string>,
+  time: number,
+  camera: CameraState,
+  viewport: ViewportState
+) {
+  if (viewport.width <= 0 || viewport.height <= 0) return overlays;
+  const projectionCamera = buildProjectionCamera(camera, viewport);
+  return overlays.map((overlay) => {
+    const anchor = overlayAnchorPointFor(sceneContext, variant, params, time, overlay);
+    if (!anchor) return overlay;
+    const projected = projectWorldPoint(anchor, projectionCamera);
+    if (!projected.visible || projected.x < 0 || projected.x > 1 || projected.y < 0 || projected.y > 1) return overlay;
+    const key = normalizeSceneLabel(`${overlay.key} ${overlay.label}`);
+    let offsetX = 0;
+    let offsetY = -4;
+    if (sceneContext.sceneKind === 'linearRail') {
+      if (key.includes('xe') || key.includes('object')) {
+        offsetY = 8;
+      } else if (key.includes('van toc') || key.endsWith(' v')) {
+        offsetX = 4;
+        offsetY = -10;
+      }
+    }
+    return {
+      ...overlay,
+      x: clamp(projected.x * 100 + offsetX, 10, 90),
+      y: clamp(projected.y * 100 + offsetY, 16, 84)
+    };
+  });
+}
+
 function simulationMetrics(sceneKind: string, params: Record<string, number | string>, speed: number, camera: CameraState, running: boolean): SimMetric[] {
   const base: SimMetric[] = [
     { label: 'Trạng thái', value: running ? 'Đang chạy' : 'Tạm dừng', hint: 'Đổi ngay khi bạn pause/play mô phỏng.' },
@@ -644,8 +874,8 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
     case 'linearRail': {
       const v = num(params.v, 6);
       return [
-        { label: 'Van toc v', value: formatMetricValue(v, ' m/s'), hint: 'Chuyen dong thang deu nen v khong doi theo thoi gian.' },
-        { label: 'Quang duong/giay', value: formatMetricValue(v, ' m'), hint: 'Moi 1 giay vat di them mot doan bang v.' },
+        { label: 'Vận tốc v', value: formatMetricValue(v, ' m/s'), hint: 'Chuyển động thẳng đều nên v không đổi theo thời gian.' },
+        { label: 'Quãng đường/giây', value: formatMetricValue(v, ' m'), hint: 'Mỗi 1 giây vật đi thêm một đoạn bằng v.' },
         ...base
       ];
     }
@@ -663,8 +893,8 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const g = num(params.g, 9.81);
       const h0 = num(params.h0, 30);
       return [
-        { label: 'Do cao h0', value: formatMetricValue(h0, ' m'), hint: 'Moc chieu cao ban dau cua vat truoc khi roi.' },
-      { label: 'Gia toc g', value: formatMetricValue(g, ' m/s²'), hint: 'Neu bo qua can khong khi thi vat tang toc deu theo g.' },
+        { label: 'Độ cao h0', value: formatMetricValue(h0, ' m'), hint: 'Mốc chiều cao ban đầu của vật trước khi rơi.' },
+      { label: 'Gia tốc g', value: formatMetricValue(g, ' m/s²'), hint: 'Nếu bỏ qua cản không khí thì vật tăng tốc đều theo g.' },
         ...base
       ];
     }
@@ -673,9 +903,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const particles = Math.round(num(params.particles, 18));
       const volume = Math.max(num(params.volume, 1.2), 0.4);
       return [
-        { label: 'Nhiet do T', value: formatMetricValue(temperature, ' K'), hint: 'Nhiet do cao hon nghia la dong nang trung binh cua phan tu lon hon.' },
-        { label: 'So phan tu', value: String(particles), hint: 'Tang mat do hat giup nhin ro hon tan suat va cham.' },
-        { label: 'The tich V', value: formatMetricValue(volume, ' m^3'), hint: 'The tich binh chua quy dinh mat do va quang duong tu do trung binh.' },
+        { label: 'Nhiệt độ T', value: formatMetricValue(temperature, ' K'), hint: 'Nhiệt độ cao hơn nghĩa là động năng trung bình của phần tử lớn hơn.' },
+        { label: 'Số phần tử', value: String(particles), hint: 'Tăng mật độ hạt giúp nhìn rõ hơn tần suất va chạm.' },
+        { label: 'Thể tích V', value: formatMetricValue(volume, ' m^3'), hint: 'Thể tích bình chứa quy định mật độ và quãng đường tự do trung bình.' },
         ...base
       ];
     }
@@ -684,9 +914,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const volume = Math.max(num(params.volume, 1.4), 0.4);
       const pressure = temperature / volume;
       return [
-        { label: 'Nhiet do T', value: formatMetricValue(temperature, ' K'), hint: 'Qua trinh dang nhiet giu T khong doi.' },
-        { label: 'The tich V', value: formatMetricValue(volume, ' m^3'), hint: 'Piston thay doi V trong khi nhiet do duoc khoa.' },
-        { label: 'Ap suat p', value: formatMetricValue(pressure, ' arb'), hint: 'Khi T khong doi, p bien thien ty le nghich voi V.' },
+        { label: 'Nhiệt độ T', value: formatMetricValue(temperature, ' K'), hint: 'Quá trình đẳng nhiệt giữ T không đổi.' },
+        { label: 'Thể tích V', value: formatMetricValue(volume, ' m^3'), hint: 'Piston thay đổi V trong khi nhiệt độ được khóa.' },
+        { label: 'Áp suất p', value: formatMetricValue(pressure, ' arb'), hint: 'Khi T không đổi, p biến thiên tỉ lệ nghịch với V.' },
         ...base
       ];
     }
@@ -695,9 +925,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const temperature = num(params.temperature, 320);
       const volume = Math.max(num(params.volume, 1.3), 0.4);
       return [
-        { label: 'Ap suat p', value: formatMetricValue(pressure, ' atm'), hint: 'Qua trinh dang ap giu p gan nhu khong doi.' },
-        { label: 'Nhiet do T', value: formatMetricValue(temperature, ' K'), hint: 'Tang T se day piston di len neu p duoc giu on dinh.' },
-        { label: 'The tich V', value: formatMetricValue(volume, ' m^3'), hint: 'V ty le thuan voi T tuyet doi khi p va n khong doi.' },
+        { label: 'Áp suất p', value: formatMetricValue(pressure, ' atm'), hint: 'Quá trình đẳng áp giữ p gần như không đổi.' },
+        { label: 'Nhiệt độ T', value: formatMetricValue(temperature, ' K'), hint: 'Tăng T sẽ đẩy piston đi lên nếu p được giữ ổn định.' },
+        { label: 'Thể tích V', value: formatMetricValue(volume, ' m^3'), hint: 'V tỉ lệ thuận với T tuyệt đối khi p và n không đổi.' },
         ...base
       ];
     }
@@ -707,9 +937,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const volume = Math.max(num(params.volume, 1.2), 0.3);
       const moles = Math.max(num(params.moles, 1), 0.1);
       return [
-        { label: 'Ap suat p', value: formatMetricValue(pressure, ' atm'), hint: 'Ap suat den tu va cham vi mo len thanh binh.' },
-        { label: 'The tich V', value: formatMetricValue(volume, ' m^3'), hint: 'Thong so hinh hoc cua buong khi.' },
-        { label: 'pV/(nT)', value: formatMetricValue((pressure * volume) / (moles * Math.max(temperature, 1))), hint: 'Gia tri nay on dinh khi mo phong bam theo pV = nRT.' },
+        { label: 'Áp suất p', value: formatMetricValue(pressure, ' atm'), hint: 'Áp suất đến từ va chạm vi mô lên thành bình.' },
+        { label: 'Thể tích V', value: formatMetricValue(volume, ' m^3'), hint: 'Thông số hình học của buồng khí.' },
+        { label: 'pV/(nT)', value: formatMetricValue((pressure * volume) / (moles * Math.max(temperature, 1))), hint: 'Giá trị này ổn định khi mô phỏng bám theo pV = nRT.' },
         ...base
       ];
     }
@@ -719,9 +949,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const A = num(params.A, 6);
       const omega = Math.sqrt(Math.max(k / Math.max(m, 0.001), 0));
       return [
-        { label: 'Bien do A', value: formatMetricValue(A, ' cm'), hint: 'Do lech lon nhat cua vat so voi vi tri can bang.' },
-        { label: 'Tan so goc', value: formatMetricValue(omega, ' rad/s'), hint: 'Con lac lo xo ly tuong co omega = sqrt(k/m).' },
-        { label: 'Chu ki T', value: formatMetricValue((2 * Math.PI) / Math.max(omega, 0.001), ' s'), hint: 'Thoi gian de vat lap lai trang thai dao dong.' },
+        { label: 'Biên độ A', value: formatMetricValue(A, ' cm'), hint: 'Độ lệch lớn nhất của vật so với vị trí cân bằng.' },
+        { label: 'Tần số góc', value: formatMetricValue(omega, ' rad/s'), hint: 'Con lắc lò xo lí tưởng có omega = sqrt(k/m).' },
+        { label: 'Chu kì T', value: formatMetricValue((2 * Math.PI) / Math.max(omega, 0.001), ' s'), hint: 'Thời gian để vật lặp lại trạng thái dao động.' },
         ...base
       ];
     }
@@ -729,8 +959,8 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const l = num(params.l, 2);
       const g = num(params.g, 9.81);
       return [
-        { label: 'Chieu dai l', value: formatMetricValue(l, ' m'), hint: 'Thong so chinh chi phoi chu ki con lac don.' },
-        { label: 'Chu ki T', value: formatMetricValue(2 * Math.PI * Math.sqrt(Math.max(l, 0.001) / Math.max(g, 0.001)), ' s'), hint: 'Dung khi goc lech nho, bo qua luc can.' },
+        { label: 'Chiều dài l', value: formatMetricValue(l, ' m'), hint: 'Thông số chính chi phối chu kì con lắc đơn.' },
+        { label: 'Chu kì T', value: formatMetricValue(2 * Math.PI * Math.sqrt(Math.max(l, 0.001) / Math.max(g, 0.001)), ' s'), hint: 'Đúng khi góc lệch nhỏ, bỏ qua lực cản.' },
         ...base
       ];
     }
@@ -738,8 +968,8 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const e = num(params.E, 120);
       const q = num(params.q, 1);
       return [
-        { label: 'Cuong do E', value: formatMetricValue(e, ' V/m'), hint: 'Dien truong deu giua hai ban cuc song song.' },
-        { label: 'Luc dien qE', value: formatMetricValue(q * e, ' N'), hint: 'Luc tac dung len hat mang dien trong mo phong ly tuong.' },
+        { label: 'Cường độ E', value: formatMetricValue(e, ' V/m'), hint: 'Điện trường đều giữa hai bản cực song song.' },
+        { label: 'Lực điện qE', value: formatMetricValue(q * e, ' N'), hint: 'Lực tác dụng lên hạt mang điện trong mô phỏng lí tưởng.' },
         ...base
       ];
     }
@@ -748,9 +978,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const q2 = num(params.q2, -2);
       const r = Math.max(num(params.r, 4), 0.3);
       return [
-        { label: 'Khoang cach r', value: formatMetricValue(r, ' m'), hint: 'Luc Coulomb giam rat nhanh khi r tang.' },
-        { label: 'Dau q1.q2', value: q1 * q2 >= 0 ? 'Cung dau' : 'Trai dau', hint: 'Cung dau day, trai dau hut.' },
-        { label: 'Ti le luc', value: formatMetricValue((q1 * q2) / (r * r)), hint: 'Gia tri ti le voi q1.q2/r^2, bo qua hang so k de doc xu huong.' },
+        { label: 'Khoảng cách r', value: formatMetricValue(r, ' m'), hint: 'Lực Coulomb giảm rất nhanh khi r tăng.' },
+        { label: 'Dấu q1.q2', value: q1 * q2 >= 0 ? 'Cùng dấu' : 'Trái dấu', hint: 'Cùng dấu đẩy, trái dấu hút.' },
+        { label: 'Tỉ lệ lực', value: formatMetricValue((q1 * q2) / (r * r)), hint: 'Giá trị tỉ lệ với q1.q2/r^2, bỏ qua hằng số k để đọc xu hướng.' },
         ...base
       ];
     }
@@ -759,9 +989,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const r = Math.max(num(params.r, 6), 0.1);
       const i = u / r;
       return [
-        { label: 'Hieu dien the U', value: formatMetricValue(u, ' V'), hint: 'Nguon cung cap su chenh lech dien the cho mach.' },
-        { label: 'Dong dien I', value: formatMetricValue(i, ' A'), hint: 'Theo dinh luat Ohm: I = U/R.' },
-        { label: 'Cong suat P', value: formatMetricValue(u * i, ' W'), hint: 'Cong suat tieu thu tren tai cua mach.' },
+        { label: 'Hiệu điện thế U', value: formatMetricValue(u, ' V'), hint: 'Nguồn cung cấp sự chênh lệch điện thế cho mạch.' },
+        { label: 'Dòng điện I', value: formatMetricValue(i, ' A'), hint: 'Theo định luật Ohm: I = U/R.' },
+        { label: 'Công suất P', value: formatMetricValue(u * i, ' W'), hint: 'Công suất tiêu thụ trên tải của mạch.' },
         ...base
       ];
     }
@@ -770,9 +1000,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const d = Math.max(num(params.doVat, 24), 0.2);
       const imageDistance = Math.abs(d - f) < 0.001 ? Infinity : (f * d) / (d - f);
       return [
-        { label: 'Tieu cu f', value: formatMetricValue(f, ' cm'), hint: 'Dau moc de dung cac tia dac biet khi dung anh.' },
-        { label: 'Khoang vat d', value: formatMetricValue(d, ' cm'), hint: 'Khoang cach tu vat den thau kinh.' },
-        { label: "Khoang anh d'", value: Number.isFinite(imageDistance) ? formatMetricValue(imageDistance, ' cm') : 'Vo cuc', hint: "Tinh theo cong thuc thau kinh mong 1/f = 1/d + 1/d'." },
+        { label: 'Tiêu cự f', value: formatMetricValue(f, ' cm'), hint: 'Dấu mốc để dùng các tia đặc biệt khi dựng ảnh.' },
+        { label: 'Khoảng vật d', value: formatMetricValue(d, ' cm'), hint: 'Khoảng cách từ vật đến thấu kính.' },
+        { label: "Khoảng ảnh d'", value: Number.isFinite(imageDistance) ? formatMetricValue(imageDistance, ' cm') : 'Vô cực', hint: "Tính theo công thức thấu kính mỏng 1/f = 1/d + 1/d'." },
         ...base
       ];
     }
@@ -782,9 +1012,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const massNumber = proton + neutron;
       const ratio = neutron / Math.max(proton, 1);
       return [
-        { label: 'So proton Z', value: String(proton), hint: 'Z quyet dinh dien tich hat nhan va nguyen to hoa hoc.' },
-        { label: 'So khoi A', value: String(massNumber), hint: 'A = Z + N voi N la so neutron.' },
-        { label: 'Ti le N/Z', value: formatMetricValue(ratio), hint: 'Ti le neutron proton anh huong den do ben cua hat nhan.' },
+        { label: 'Số proton Z', value: String(proton), hint: 'Z quyết định điện tích hạt nhân và nguyên tố hóa học.' },
+        { label: 'Số khối A', value: String(massNumber), hint: 'A = Z + N với N là số neutron.' },
+        { label: 'Tỉ lệ N/Z', value: formatMetricValue(ratio), hint: 'Tỉ lệ neutron proton ảnh hưởng đến độ bền của hạt nhân.' },
         ...base
       ];
     }
@@ -793,9 +1023,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const n0 = Math.max(num(params.N0, 100), 1);
       const halfLife = Math.log(2) / lambda;
       return [
-        { label: 'Hang so phong xa λ', value: formatMetricValue(lambda, ' 1/s'), hint: 'λ cang lon thi xac suat phan ra trong mot don vi thoi gian cang cao.' },
-        { label: 'So hat ban dau N0', value: String(Math.round(n0)), hint: 'So hat nhan chua phan ra tai thoi diem bat dau.' },
-        { label: 'Chu ki ban ra', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / λ.' },
+        { label: 'Hằng số phóng xạ λ', value: formatMetricValue(lambda, ' 1/s'), hint: 'λ càng lớn thì xác suất phân rã trong một đơn vị thời gian càng cao.' },
+        { label: 'Số hạt ban đầu N0', value: String(Math.round(n0)), hint: 'Số hạt nhân chưa phân rã tại thời điểm bắt đầu.' },
+        { label: 'Chu kì bán rã', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / λ.' },
         ...base
       ];
     }
@@ -803,9 +1033,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const energy = Math.max(num(params.energy, 200), 0);
       const massDefect = Math.max(num(params.massDefect, 0.2), 0);
       return [
-        { label: 'Nang luong Q', value: formatMetricValue(energy, ' MeV'), hint: 'Do lon nang luong trao doi trong phan ung hat nhan.' },
-        { label: 'Do hut khoi Δm', value: formatMetricValue(massDefect, ' u'), hint: 'Δm lien he truc tiep voi nang luong qua E = Δm.c^2.' },
-        { label: 'Can doi bao toan', value: 'A, Z', hint: 'Can bao toan so khoi A va dien tich Z truoc sau phan ung.' },
+        { label: 'Năng lượng Q', value: formatMetricValue(energy, ' MeV'), hint: 'Độ lớn năng lượng trao đổi trong phản ứng hạt nhân.' },
+        { label: 'Độ hụt khối Δm', value: formatMetricValue(massDefect, ' u'), hint: 'Δm liên hệ trực tiếp với năng lượng qua E = Δm.c^2.' },
+        { label: 'Cân đối bảo toàn', value: 'A, Z', hint: 'Cần bảo toàn số khối A và điện tích Z trước sau phản ứng.' },
         ...base
       ];
     }
@@ -813,9 +1043,9 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       const massDefect = Math.max(num(params.massDefect, 0.2), 0);
       const binding = Math.max(num(params.binding, 8), 0);
       return [
-        { label: 'Do hut khoi Δm', value: formatMetricValue(massDefect, ' u'), hint: 'Do hut khoi cho thay mot phan khoi luong da chuyen thanh nang luong lien ket.' },
-        { label: 'Lien ket rieng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Gia tri nay cang lon thi hat nhan thuong cang ben.' },
-        { label: 'Do sau gieng the', value: formatMetricValue(binding / Math.max(massDefect, 0.01)), hint: 'Chi bao hinh dung do ben cua trang thai lien ket.' },
+        { label: 'Độ hụt khối Δm', value: formatMetricValue(massDefect, ' u'), hint: 'Độ hụt khối cho thấy một phần khối lượng đã chuyển thành năng lượng liên kết.' },
+        { label: 'Liên kết riêng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Giá trị này càng lớn thì hạt nhân thường càng bền.' },
+        { label: 'Độ sâu giếng thế', value: formatMetricValue(binding / Math.max(massDefect, 0.01)), hint: 'Chỉ báo hình dung độ bền của trạng thái liên kết.' },
         ...base
       ];
     }
@@ -826,8 +1056,8 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
 
 function interactionTips(sceneKind: string): string[] {
   const shared = [
-    'Lan chuot de zoom, keo chuot trai de orbit, Shift hoac chuot phai de pan.',
-    'Doi goc nhin Top/Side/Focus de doc nhanh quy luat theo tung bai.'
+    'Lăn chuột để zoom, kéo chuột trái để xoay, giữ Shift hoặc chuột phải để pan.',
+    'Đổi góc nhìn để đọc nhanh quy luật theo từng bài.'
   ];
   switch (sceneKind) {
     case 'linearRail':
@@ -852,20 +1082,20 @@ function interactionTips(sceneKind: string): string[] {
 function parameterControlsFor(sceneKind: string): ParamControl[] {
   switch (sceneKind) {
     case 'linearRail':
-      return [{ key: 'v', label: 'Van toc', min: 1, max: 20, step: 0.5, unit: 'm/s' }];
+      return [{ key: 'v', label: 'Vận tốc', min: 1, max: 20, step: 0.5, unit: 'm/s' }];
     case 'acceleratedCart':
       return [
         { key: 'v0', label: 'v0', min: 0, max: 12, step: 0.5, unit: 'm/s' },
-        { key: 'a', label: 'Gia toc', min: 0.2, max: 8, step: 0.1, unit: 'm/s²' }
+        { key: 'a', label: 'Gia tốc', min: 0.2, max: 8, step: 0.1, unit: 'm/s²' }
       ];
     case 'freeFallTower':
       return [
-        { key: 'h0', label: 'Do cao', min: 5, max: 60, step: 1, unit: 'm' },
+        { key: 'h0', label: 'Độ cao', min: 5, max: 60, step: 1, unit: 'm' },
       { key: 'g', label: 'g', min: 1, max: 20, step: 0.1, unit: 'm/s²' }
       ];
     case 'circularRotor':
       return [
-        { key: 'r', label: 'Ban kinh', min: 1, max: 8, step: 0.2, unit: 'm' },
+        { key: 'r', label: 'Bán kính', min: 1, max: 8, step: 0.2, unit: 'm' },
         { key: 'omega', label: 'Omega', min: 0.2, max: 4, step: 0.1, unit: 'rad/s' }
       ];
     case 'thermalParticles':
@@ -895,36 +1125,36 @@ function parameterControlsFor(sceneKind: string): ParamControl[] {
       ];
     case 'springMass':
       return [
-        { key: 'A', label: 'Bien do', min: 1, max: 12, step: 0.5, unit: 'cm' },
-        { key: 'k', label: 'Do cung k', min: 5, max: 50, step: 1, unit: 'N/m' },
-        { key: 'm', label: 'Khoi luong', min: 0.1, max: 2, step: 0.1, unit: 'kg' }
+        { key: 'A', label: 'Biên độ', min: 1, max: 12, step: 0.5, unit: 'cm' },
+        { key: 'k', label: 'Độ cứng k', min: 5, max: 50, step: 1, unit: 'N/m' },
+        { key: 'm', label: 'Khối lượng', min: 0.1, max: 2, step: 0.1, unit: 'kg' }
       ];
     case 'pendulumArc':
       return [
-        { key: 'l', label: 'Chieu dai', min: 0.5, max: 4, step: 0.1, unit: 'm' },
-        { key: 'angle', label: 'Goc lech', min: 4, max: 35, step: 1, unit: 'deg' }
+        { key: 'l', label: 'Chiều dài', min: 0.5, max: 4, step: 0.1, unit: 'm' },
+        { key: 'angle', label: 'Góc lệch', min: 4, max: 35, step: 1, unit: 'deg' }
       ];
     case 'travelingWave':
       return [
-        { key: 'A', label: 'Bien do', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
-        { key: 'lambda', label: 'Buoc song', min: 1, max: 8, step: 0.2, unit: 'm' },
-        { key: 'v', label: 'Toc do song', min: 1, max: 10, step: 0.2, unit: 'm/s' }
+        { key: 'A', label: 'Biên độ', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
+        { key: 'lambda', label: 'Bước sóng', min: 1, max: 8, step: 0.2, unit: 'm' },
+        { key: 'v', label: 'Tốc độ sóng', min: 1, max: 10, step: 0.2, unit: 'm/s' }
       ];
     case 'interferenceField':
       return [
-        { key: 'A', label: 'Bien do', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
-        { key: 'lambda', label: 'Buoc song', min: 1, max: 8, step: 0.2, unit: 'm' },
+        { key: 'A', label: 'Biên độ', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
+        { key: 'lambda', label: 'Bước sóng', min: 1, max: 8, step: 0.2, unit: 'm' },
         { key: 'd', label: 'Khoảng hai nguồn', min: 1, max: 10, step: 0.2, unit: 'm' }
       ];
     case 'standingWave':
       return [
-        { key: 'A', label: 'Bien do', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
-        { key: 'lambda', label: 'Buoc song', min: 1, max: 8, step: 0.2, unit: 'm' }
+        { key: 'A', label: 'Biên độ', min: 0.5, max: 4, step: 0.1, unit: 'cm' },
+        { key: 'lambda', label: 'Bước sóng', min: 1, max: 8, step: 0.2, unit: 'm' }
       ];
     case 'electricPlates':
       return [
-        { key: 'E', label: 'Dien truong', min: 20, max: 240, step: 5, unit: 'V/m' },
-        { key: 'q', label: 'Dien tich', min: -3, max: 3, step: 0.5, unit: 'C' }
+        { key: 'E', label: 'Điện trường', min: 20, max: 240, step: 5, unit: 'V/m' },
+        { key: 'q', label: 'Điện tích', min: -3, max: 3, step: 0.5, unit: 'C' }
       ];
     case 'coulombCharges':
       return [
@@ -934,13 +1164,13 @@ function parameterControlsFor(sceneKind: string): ParamControl[] {
       ];
     case 'ohmCircuit':
       return [
-        { key: 'u', label: 'Dien ap', min: 1, max: 24, step: 0.5, unit: 'V' },
+        { key: 'u', label: 'Điện áp', min: 1, max: 24, step: 0.5, unit: 'V' },
         { key: 'r', label: 'Điện trở', min: 1, max: 20, step: 0.5, unit: 'Ω' }
       ];
     case 'lensBench':
       return [
-        { key: 'f', label: 'Tieu cu', min: 4, max: 24, step: 0.5, unit: 'cm' },
-        { key: 'doVat', label: 'Khoang vat', min: 5, max: 50, step: 0.5, unit: 'cm' }
+        { key: 'f', label: 'Tiêu cự', min: 4, max: 24, step: 0.5, unit: 'cm' },
+        { key: 'doVat', label: 'Khoảng vật', min: 5, max: 50, step: 0.5, unit: 'cm' }
       ];
     case 'nuclearCluster':
       return [
@@ -1014,8 +1244,8 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Vi tri x', value: formatMetricValue(x, ' m'), hint: 'Chuyen dong thang deu: x = v.t neu chon x0 = 0.' },
-          { label: 'Van toc v', value: formatMetricValue(v, ' m/s'), hint: 'Do lon va huong khong doi trong suot qua trinh.' },
+          { label: 'Vị trí x', value: formatMetricValue(x, ' m'), hint: 'Chuyển động thẳng đều: x = v.t nếu chọn x0 = 0.' },
+          { label: 'Vận tốc v', value: formatMetricValue(v, ' m/s'), hint: 'Độ lớn và hướng không đổi trong suốt quá trình.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'v', value: formatMetricValue(v, ' m/s'), color: '#2563eb' }],
@@ -1034,9 +1264,9 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Vi tri x', value: formatMetricValue(x, ' m'), hint: 'x = v0.t + 1/2.a.t^2 khi chon moc x0 = 0.' },
-          { label: 'Van toc v', value: formatMetricValue(v, ' m/s'), hint: 'Van toc tang deu theo t: v = v0 + a.t.' },
-      { label: 'Gia toc a', value: formatMetricValue(a, ' m/s²'), hint: 'Gia toc duoc giu hang trong mo phong nay.' },
+          { label: 'Vị trí x', value: formatMetricValue(x, ' m'), hint: 'x = v0.t + 1/2.a.t^2 khi chọn mốc x0 = 0.' },
+          { label: 'Vận tốc v', value: formatMetricValue(v, ' m/s'), hint: 'Vận tốc tăng đều theo t: v = v0 + a.t.' },
+      { label: 'Gia tốc a', value: formatMetricValue(a, ' m/s²'), hint: 'Gia tốc được giữ hằng trong mô phỏng này.' },
           ...baseMetrics
         ],
         vectors: [
@@ -1058,14 +1288,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Do cao h', value: formatMetricValue(h, ' m'), hint: 'h = h0 - 1/2.g.t^2 khi vat roi xuong.' },
-          { label: 'Van toc roi', value: formatMetricValue(v, ' m/s'), hint: 'Do lon van toc tang deu: v = g.t.' },
-      { label: 'Gia toc g', value: formatMetricValue(g, ' m/s²'), hint: 'Gia toc trong truong duoc coi la khong doi.' },
+          { label: 'Độ cao h', value: formatMetricValue(h, ' m'), hint: 'h = h0 - 1/2.g.t^2 khi vật rơi xuống.' },
+          { label: 'Vận tốc rơi', value: formatMetricValue(v, ' m/s'), hint: 'Độ lớn vận tốc tăng đều: v = g.t.' },
+      { label: 'Gia tốc g', value: formatMetricValue(g, ' m/s²'), hint: 'Gia tốc trọng trường được coi là không đổi.' },
           ...baseMetrics
         ],
       vectors: [{ label: 'g', value: formatMetricValue(g, ' m/s²'), color: '#f97316' }],
         overlays: [
-          { key: 'ball', label: 'Vat roi', value: `h = ${formatMetricValue(h, ' m')}`, x: 62, y: 18 + (1 - h / h0) * 56, color: '#2563eb' },
+          { key: 'ball', label: 'Vật rơi', value: `h = ${formatMetricValue(h, ' m')}`, x: 62, y: 18 + (1 - h / h0) * 56, color: '#2563eb' },
           { key: 'velocity', label: 'v', value: formatMetricValue(v, ' m/s'), x: 78, y: 62, color: '#0f172a' }
         ]
       };
@@ -1080,9 +1310,9 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Goc quay', value: formatMetricValue(angle, ' rad'), hint: 'Goc quay bien thien deu theo theta = omega.t.' },
-          { label: 'Toc do dai', value: formatMetricValue(v, ' m/s'), hint: 'v = omega.r trong chuyen dong tron deu.' },
-      { label: 'Gia toc huong tam', value: formatMetricValue(aHt, ' m/s²'), hint: 'a_ht = omega^2.r va luon huong ve tam quay.' },
+          { label: 'Góc quay', value: formatMetricValue(angle, ' rad'), hint: 'Góc quay biến thiên đều theo theta = omega.t.' },
+          { label: 'Tốc độ dài', value: formatMetricValue(v, ' m/s'), hint: 'v = omega.r trong chuyển động tròn đều.' },
+      { label: 'Gia tốc hướng tâm', value: formatMetricValue(aHt, ' m/s²'), hint: 'a_ht = omega^2.r và luôn hướng về tâm quay.' },
           ...baseMetrics
         ],
         vectors: [
@@ -1107,10 +1337,10 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Li do x', value: formatMetricValue(x * 100, ' cm'), hint: 'x = A.cos(omega.t).' },
-          { label: 'Van toc v', value: formatMetricValue(v, ' m/s'), hint: 'v lech pha pi/2 so voi li do.' },
-      { label: 'Gia toc a', value: formatMetricValue(acc, ' m/s²'), hint: 'a = -omega^2.x, huong ve vi tri can bang.' },
-          { label: 'Chu ki T', value: formatMetricValue((2 * Math.PI) / omega, ' s'), hint: 'T = 2.pi.sqrt(m/k).' },
+          { label: 'Li độ x', value: formatMetricValue(x * 100, ' cm'), hint: 'x = A.cos(omega.t).' },
+          { label: 'Vận tốc v', value: formatMetricValue(v, ' m/s'), hint: 'v lệch pha pi/2 so với li độ.' },
+      { label: 'Gia tốc a', value: formatMetricValue(acc, ' m/s²'), hint: 'a = -omega^2.x, hướng về vị trí cân bằng.' },
+          { label: 'Chu kì T', value: formatMetricValue((2 * Math.PI) / omega, ' s'), hint: 'T = 2.pi.sqrt(m/k).' },
           ...baseMetrics
         ],
         vectors: [
@@ -1118,8 +1348,8 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
       { label: 'a', value: formatMetricValue(acc, ' m/s²'), color: '#f97316' }
         ],
         overlays: [
-          { key: 'mass', label: 'Vat m', value: `x = ${formatMetricValue(x * 100, ' cm')}`, x: 50 + x * 380, y: 62, color: '#2563eb' },
-          { key: 'spring', label: 'Lo xo', value: `T = ${formatMetricValue((2 * Math.PI) / omega, ' s')}`, x: 18, y: 28, color: '#0f172a' }
+          { key: 'mass', label: 'Vật m', value: `x = ${formatMetricValue(x * 100, ' cm')}`, x: 50 + x * 380, y: 62, color: '#2563eb' },
+          { key: 'spring', label: 'Lò xo', value: `T = ${formatMetricValue((2 * Math.PI) / omega, ' s')}`, x: 18, y: 28, color: '#0f172a' }
         ]
       };
     }
@@ -1133,9 +1363,9 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Goc lech', value: formatMetricValue(theta * 180 / Math.PI, ' deg'), hint: 'Gan dung goc nho: theta = theta0.cos(omega.t).' },
-          { label: 'Van toc cung', value: formatMetricValue(linearV, ' m/s'), hint: 'Do lon van toc lon nhat khi qua vi tri can bang.' },
-          { label: 'Chu ki T', value: formatMetricValue((2 * Math.PI) / omega, ' s'), hint: 'T = 2.pi.sqrt(l/g), khong phu thuoc khoi luong.' },
+          { label: 'Góc lệch', value: formatMetricValue(theta * 180 / Math.PI, ' deg'), hint: 'Gần đúng góc nhỏ: theta = theta0.cos(omega.t).' },
+          { label: 'Vận tốc cung', value: formatMetricValue(linearV, ' m/s'), hint: 'Độ lớn vận tốc lớn nhất khi qua vị trí cân bằng.' },
+          { label: 'Chu kì T', value: formatMetricValue((2 * Math.PI) / omega, ' s'), hint: 'T = 2.pi.sqrt(l/g), không phụ thuộc khối lượng.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'v', value: formatMetricValue(linearV, ' m/s'), color: '#2563eb' }],
@@ -1155,14 +1385,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Bien do A', value: formatMetricValue(amplitude, ' cm'), hint: 'Do lech cuc dai cua moi phan tu moi truong.' },
-          { label: 'Tan so f', value: formatMetricValue(frequency, ' Hz'), hint: 'f = v/lambda cho song co truyen deu.' },
-          { label: 'Pha nguon', value: formatMetricValue(phase, ' rad'), hint: 'Pha song dich chuyen theo thoi gian va huong truyen.' },
+          { label: 'Biên độ A', value: formatMetricValue(amplitude, ' cm'), hint: 'Độ lệch cực đại của mỗi phần tử môi trường.' },
+          { label: 'Tần số f', value: formatMetricValue(frequency, ' Hz'), hint: 'f = v/lambda cho sóng cơ truyền đều.' },
+          { label: 'Pha nguồn', value: formatMetricValue(phase, ' rad'), hint: 'Pha sóng dịch chuyển theo thời gian và hướng truyền.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'v_song', value: formatMetricValue(waveSpeed, ' m/s'), color: '#2563eb' }],
         overlays: [
-          { key: 'source', label: 'Nguon song', value: `A = ${formatMetricValue(amplitude, ' cm')}`, x: 16, y: 52, color: '#2563eb' },
+          { key: 'source', label: 'Nguồn sóng', value: `A = ${formatMetricValue(amplitude, ' cm')}`, x: 16, y: 52, color: '#2563eb' },
           { key: 'lambda', label: 'λ', value: formatMetricValue(lambda, ' m'), x: 48, y: 24, color: '#0f172a' },
           { key: 'speed', label: 'v', value: formatMetricValue(waveSpeed, ' m/s'), x: 80, y: 60, color: '#f97316' }
         ]
@@ -1177,8 +1407,8 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Khoang hai nguon', value: formatMetricValue(d, ' m'), hint: 'd chi phoi khoang van va mien giao thoa.' },
-          { label: 'Hieu duong di', value: formatMetricValue(pathDiff, ' m'), hint: 'Dung de so sanh dieu kien cuc dai/cuc tieu giao thoa.' },
+          { label: 'Khoảng hai nguồn', value: formatMetricValue(d, ' m'), hint: 'd chi phối khoảng vân và miền giao thoa.' },
+          { label: 'Hiệu đường đi', value: formatMetricValue(pathDiff, ' m'), hint: 'Dùng để so sánh điều kiện cực đại/cực tiểu giao thoa.' },
           { label: 'Điều kiện cực đại', value: `Δd = k.${formatMetricValue(lambda, ' m')}`, hint: 'Hai sóng đến cùng pha tạo cực đại giao thoa.' },
           ...baseMetrics
         ],
@@ -1198,15 +1428,15 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Khoang nut', value: formatMetricValue(nodeSpacing, ' m'), hint: 'Hai nut lien tiep cach nhau lambda/2.' },
-          { label: 'Khoang nut-bung', value: formatMetricValue(lambda / 4, ' m'), hint: 'Tu nut den bung gan nhat la lambda/4.' },
-          { label: 'Bien do cuc dai', value: formatMetricValue(amplitude, ' cm'), hint: 'Bung song dat bien do dao dong lon nhat.' },
+          { label: 'Khoảng nút', value: formatMetricValue(nodeSpacing, ' m'), hint: 'Hai nút liên tiếp cách nhau lambda/2.' },
+          { label: 'Khoảng nút-bụng', value: formatMetricValue(lambda / 4, ' m'), hint: 'Từ nút đến bụng gần nhất là lambda/4.' },
+          { label: 'Biên độ cực đại', value: formatMetricValue(amplitude, ' cm'), hint: 'Bụng sóng đạt biên độ dao động lớn nhất.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'λ/2', value: formatMetricValue(nodeSpacing, ' m'), color: '#2563eb' }],
         overlays: [
-          { key: 'node', label: 'Nut', value: formatMetricValue(nodeSpacing, ' m'), x: 26, y: 55, color: '#0f172a' },
-          { key: 'antinode', label: 'Bung', value: formatMetricValue(amplitude, ' cm'), x: 50, y: 38, color: '#2563eb' },
+          { key: 'node', label: 'Nút', value: formatMetricValue(nodeSpacing, ' m'), x: 26, y: 55, color: '#0f172a' },
+          { key: 'antinode', label: 'Bụng', value: formatMetricValue(amplitude, ' cm'), x: 50, y: 38, color: '#2563eb' },
           { key: 'lambda', label: 'λ', value: formatMetricValue(lambda, ' m'), x: 76, y: 20, color: '#f97316' }
         ]
       };
@@ -1220,14 +1450,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Luc dien', value: formatMetricValue(force, ' N'), hint: 'Luc dien trong mo hinh ly tuong: F = q.E.' },
-          { label: 'Lech quy dao', value: formatMetricValue(y, ' m'), hint: 'Hat lech theo chieu cua luc dien tac dung.' },
-          { label: 'Cuong do E', value: formatMetricValue(e, ' V/m'), hint: 'Gia tri dien truong giua hai ban song song.' },
+          { label: 'Lực điện', value: formatMetricValue(force, ' N'), hint: 'Lực điện trong mô hình lí tưởng: F = q.E.' },
+          { label: 'Lệch quỹ đạo', value: formatMetricValue(y, ' m'), hint: 'Hạt lệch theo chiều của lực điện tác dụng.' },
+          { label: 'Cường độ E', value: formatMetricValue(e, ' V/m'), hint: 'Giá trị điện trường giữa hai bản song song.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'F = qE', value: formatMetricValue(force, ' N'), color: '#f97316' }],
         overlays: [
-          { key: 'particle', label: 'Hat q', value: `F = ${formatMetricValue(force, ' N')}`, x: 38 + t / duration * 34, y: 50 - clamp(y * 20, -18, 18), color: '#2563eb' },
+          { key: 'particle', label: 'Hạt q', value: `F = ${formatMetricValue(force, ' N')}`, x: 38 + t / duration * 34, y: 50 - clamp(y * 20, -18, 18), color: '#2563eb' },
           { key: 'field', label: 'E', value: formatMetricValue(e, ' V/m'), x: 80, y: 20, color: '#0f172a' }
         ]
       };
@@ -1263,7 +1493,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Dong dien I', value: formatMetricValue(i, ' A'), hint: 'Theo dinh luat Ohm: I = U/R.' },
+          { label: 'Dòng điện I', value: formatMetricValue(i, ' A'), hint: 'Theo định luật Ohm: I = U/R.' },
           { label: 'Công suất P', value: formatMetricValue(p, ' W'), hint: 'P = U.I = I^2.R.' },
           { label: 'Hiệu điện thế U', value: formatMetricValue(u, ' V'), hint: 'Nguồn cấp điện cho toàn mạch.' },
           ...baseMetrics
@@ -1289,7 +1519,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
           { label: 'Tiêu cự f', value: formatMetricValue(f, ' cm'), hint: 'Thông số quang học cốt lõi của thấu kính.' },
           ...baseMetrics
         ],
-        vectors: [{ label: 'Tia toi', value: `f = ${formatMetricValue(f, ' cm')}`, color: '#2563eb' }],
+        vectors: [{ label: 'Tia tới', value: `f = ${formatMetricValue(f, ' cm')}`, color: '#2563eb' }],
         overlays: [
           { key: 'object', label: 'Vật', value: `d = ${formatMetricValue(d, ' cm')}`, x: 24, y: 60, color: '#0f172a' },
           { key: 'lens', label: 'Thấu kính', value: `f = ${formatMetricValue(f, ' cm')}`, x: 50, y: 26, color: '#2563eb' },
@@ -1305,14 +1535,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'So proton Z', value: String(proton), hint: 'Dien tich hat nhan bang +Ze.' },
-          { label: 'So neutron N', value: String(neutron), hint: 'N cung voi Z quyet dinh do ben cua hat nhan.' },
-          { label: 'So khoi A', value: String(massNumber), hint: 'A = Z + N.' },
+          { label: 'Số proton Z', value: String(proton), hint: 'Điện tích hạt nhân bằng +Ze.' },
+          { label: 'Số neutron N', value: String(neutron), hint: 'N cùng với Z quyết định độ bền của hạt nhân.' },
+          { label: 'Số khối A', value: String(massNumber), hint: 'A = Z + N.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'N/Z', value: formatMetricValue(neutron / Math.max(proton, 1)), color: '#f97316' }],
         overlays: [
-          { key: 'nucleus', label: 'Hat nhan', value: `A = ${massNumber}, Z = ${proton}`, x: 50, y: 50, color: '#2563eb' }
+          { key: 'nucleus', label: 'Hạt nhân', value: `A = ${massNumber}, Z = ${proton}`, x: 50, y: 50, color: '#2563eb' }
         ]
       };
     }
@@ -1326,15 +1556,15 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'So hat con lai', value: formatMetricValue(remaining), hint: 'N = N0.e^(-lambda.t).' },
-          { label: 'So hat da phan ra', value: formatMetricValue(emitted), hint: 'Bang N0 - N tai thoi diem dang xet.' },
-          { label: 'Chu ki ban ra', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / lambda.' },
+          { label: 'Số hạt còn lại', value: formatMetricValue(remaining), hint: 'N = N0.e^(-lambda.t).' },
+          { label: 'Số hạt đã phân rã', value: formatMetricValue(emitted), hint: 'Bằng N0 - N tại thời điểm đang xét.' },
+          { label: 'Chu kì bán rã', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / lambda.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'λ', value: formatMetricValue(lambda, ' 1/s'), color: '#f97316' }],
         overlays: [
-          { key: 'parent', label: 'Hat nhan me', value: `N = ${formatMetricValue(remaining)}`, x: 42, y: 54, color: '#2563eb' },
-          { key: 'detector', label: 'Bo dem', value: `Da phat = ${formatMetricValue(emitted)}`, x: 78, y: 34, color: '#0f172a' }
+          { key: 'parent', label: 'Hạt nhân mẹ', value: `N = ${formatMetricValue(remaining)}`, x: 42, y: 54, color: '#2563eb' },
+          { key: 'detector', label: 'Bộ đếm', value: `Đã phát = ${formatMetricValue(emitted)}`, x: 78, y: 34, color: '#0f172a' }
         ]
       };
     }
@@ -1346,15 +1576,15 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Nang luong trao doi', value: formatMetricValue(released, ' MeV'), hint: 'Mo ta xu huong Q tang khi phan ung tien trien.' },
-          { label: 'Do hut khoi', value: formatMetricValue(massDefect, ' u'), hint: 'Lien he nang luong theo E = Δm.c^2.' },
-          { label: 'Bao toan', value: 'A, Z', hint: 'Can doi so khoi va dien tich hai ve phuong trinh phan ung.' },
+          { label: 'Năng lượng trao đổi', value: formatMetricValue(released, ' MeV'), hint: 'Mô tả xu hướng Q tăng khi phản ứng tiến triển.' },
+          { label: 'Độ hụt khối', value: formatMetricValue(massDefect, ' u'), hint: 'Liên hệ năng lượng theo E = Δm.c^2.' },
+          { label: 'Bảo toàn', value: 'A, Z', hint: 'Cân đối số khối và điện tích hai vế phương trình phản ứng.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'Q', value: formatMetricValue(energy, ' MeV'), color: '#22c55e' }],
         overlays: [
-          { key: 'incoming', label: 'Hat toi', value: 'Tien vao va cham', x: 24 + Math.min((t / Math.max(duration, 0.1)) * 36, 36), y: 52, color: '#f97316' },
-          { key: 'products', label: 'San pham', value: `Q = ${formatMetricValue(released, ' MeV')}`, x: 72, y: 42, color: '#2563eb' }
+          { key: 'incoming', label: 'Hạt tới', value: 'Tiến vào va chạm', x: 24 + Math.min((t / Math.max(duration, 0.1)) * 36, 36), y: 52, color: '#f97316' },
+          { key: 'products', label: 'Sản phẩm', value: `Q = ${formatMetricValue(released, ' MeV')}`, x: 72, y: 42, color: '#2563eb' }
         ]
       };
     }
@@ -1365,14 +1595,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Do hut khoi', value: formatMetricValue(massDefect, ' u'), hint: 'Cho thay phan khoi luong da chuyen thanh nang luong lien ket.' },
-          { label: 'Lien ket rieng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Gia tri lon thuong ung voi hat nhan ben hon.' },
-          { label: 'Do sau gieng', value: formatMetricValue(binding * 0.8, ' arb'), hint: 'Chi bao dinh tinh muc do hut cua trang thai lien ket.' },
+          { label: 'Độ hụt khối', value: formatMetricValue(massDefect, ' u'), hint: 'Cho thấy phần khối lượng đã chuyển thành năng lượng liên kết.' },
+          { label: 'Liên kết riêng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Giá trị lớn thường ứng với hạt nhân bền hơn.' },
+          { label: 'Độ sâu giếng', value: formatMetricValue(binding * 0.8, ' arb'), hint: 'Chỉ báo định tính mức độ hút của trạng thái liên kết.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'E_lk', value: formatMetricValue(binding, ' MeV/nuclon'), color: '#a855f7' }],
         overlays: [
-          { key: 'well', label: 'Gieng the', value: `Δm = ${formatMetricValue(massDefect, ' u')}`, x: 50, y: 60, color: '#2563eb' }
+          { key: 'well', label: 'Giếng thế', value: `Δm = ${formatMetricValue(massDefect, ' u')}`, x: 50, y: 60, color: '#2563eb' }
         ]
       };
     }
@@ -1961,9 +2191,9 @@ function buildScene(type: string, title: string, params: Record<string, number |
         motion.add(tick);
       }
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1, 1.1), material(theme.accent));
-      body.position.set(-5.5, -0.85 + v.offsetY, v.offsetZ * 0.3);
+      body.position.set(-5.5, -0.48 + v.offsetY * 0.35, v.offsetZ * 0.22);
       orbit.add(body);
-      addArrow(orbit, '#f8fafc', [1.2, 0.2, 0], [0, 0, -Math.PI / 2], 1.2);
+      addArrow(orbit, '#f8fafc', [1.2, 0.42, 0], [0, 0, -Math.PI / 2], 1.2);
       break;
     }
     case 'acceleratedCart': {
@@ -2785,7 +3015,7 @@ function ImageStage({ url, title }: { url: string; title: string }) {
       >
         <img src={url} alt={title} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }} />
       </div>
-      <div className="note-box">Anh minh hoa bam sat noi dung bai dang bat. Keo de pan, lan chuot de zoom.</div>
+      <div className="note-box">Ảnh minh họa bám sát nội dung bài đang bật. Kéo để pan, lăn chuột để zoom.</div>
     </div>
   );
 }
@@ -2800,8 +3030,9 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [camera, setCamera] = useState<CameraState>(defaultCameraState);
-  const [badges, setBadges] = useState<string[]>([]);
   const [displayTime, setDisplayTime] = useState(0);
+  const [viewport, setViewport] = useState<ViewportState>({ width: 760, height: 470 });
+  const [showOverlayLabels, setShowOverlayLabels] = useState(true);
   const [controlledParams, setControlledParams] = useState<Record<string, number | string>>(params);
 
   const sceneContext = useMemo(() => resolveSceneContext(type, title, config as Record<string, unknown>), [type, title, config]);
@@ -2815,7 +3046,6 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
   const annotations = useMemo(() => sceneAnnotations(sceneContext.sceneKind, config as Record<string, unknown>), [sceneContext.sceneKind, config]);
   const lessonFocus = sceneFocusFor(sceneContext.sceneKind);
   const displayLabel = sceneLabelFor(sceneContext.sceneKind);
-  const headline = sceneFocusFor(sceneContext.sceneKind);
   const cameraBounds = useMemo(() => cameraBoundsFor(sceneContext.sceneKind), [sceneContext.sceneKind]);
   const controls = useMemo(() => parameterControlsFor(sceneContext.sceneKind), [sceneContext.sceneKind]);
   const effectiveParams = useMemo(() => ({ ...params, ...controlledParams }), [params, controlledParams]);
@@ -2824,8 +3054,16 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
     [sceneContext.sceneKind, effectiveParams, displayTime, speed, running, camera]
   );
   const overlayItems = useMemo(
-    () => enrichOverlays(sceneContext.sceneKind, simState.overlays, annotations),
-    [sceneContext.sceneKind, simState.overlays, annotations]
+    () => projectOverlayItems(
+      sceneContext,
+      variant,
+      enrichOverlays(sceneContext.sceneKind, simState.overlays, annotations),
+      effectiveParams,
+      displayTime,
+      camera,
+      viewport
+    ),
+    [sceneContext, variant, effectiveParams, simState.overlays, annotations, displayTime, camera, viewport]
   );
   const cameraPresets = useMemo(() => cameraPresetsFor(sceneContext.sceneKind, cameraBounds), [sceneContext.sceneKind, cameraBounds]);
   const tips = useMemo(() => interactionTips(sceneContext.sceneKind), [sceneContext.sceneKind]);
@@ -2833,7 +3071,7 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
     () => Object.entries(effectiveParams).filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '').slice(0, 8),
     [effectiveParams]
   );
-  const visualModeLabel = computedMode === 'image' ? 'Anh minh hoa' : 'Mo phong tuong tac';
+  const visualModeLabel = computedMode === 'image' ? 'Ảnh minh họa' : 'Mô phỏng tương tác';
 
   useEffect(() => {
     setControlledParams(params);
@@ -2850,6 +3088,7 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
     const mount = mountRef.current;
     const width = mount.clientWidth || 760;
     const height = clamp(Math.round(width * 0.62), 420, 560);
+    setViewport({ width, height });
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(theme.bg);
@@ -2938,6 +3177,7 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
       renderer.setSize(w, h);
       camera3d.aspect = w / h;
       camera3d.updateProjectionMatrix();
+      setViewport({ width: w, height: h });
     };
     window.addEventListener('resize', onResize);
     return () => {
@@ -2960,19 +3200,6 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
     if (!handles || computedMode === 'image') return;
     buildScene(type, title, effectiveParams, config as Record<string, unknown>, handles.motion, handles.orbit, theme);
   }, [type, title, effectiveParams, computedMode, theme, config]);
-
-
-  useEffect(() => {
-    if (computedMode === 'image') return;
-    setBadges([
-      `Mode: Three.js WebGL`,
-      `Preset: ${type}`,
-      `Scene: ${sceneContext.sceneId}`,
-      `Layout: ${sceneContext.sceneKind}`,
-      `Variant: #${String(variant.seed).slice(-4)}`,
-      `M\u1ee5c ti\u00eau: ${headline}`
-    ]);
-  }, [type, computedMode, sceneContext, variant, headline]);
 
   useEffect(() => {
     const handles = handlesRef.current;
@@ -3016,21 +3243,22 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
         <>
           <div className="simulation-box canvas-box kntech-sim-shell sim-canvas-shell">
             <div ref={mountRef} className="three-stage" />
-            <div className="sim-overlay-layer">
-              {overlayItems.map((item) => (
-                <div
-                  key={item.key}
-                  className="sim-overlay-chip"
-                  style={{ left: `${item.x}%`, top: `${item.y}%`, borderColor: item.color || '#93c5fd' }}
-                >
-                  <strong>{t(item.label)}</strong>
-                  <span>{t(item.value)}</span>
-                  {item.note ? <small>{t(item.note)}</small> : null}
-                </div>
-              ))}
-            </div>
+            {showOverlayLabels ? (
+              <div className="sim-overlay-layer">
+                {overlayItems.map((item) => (
+                  <div
+                    key={item.key}
+                    className="sim-overlay-chip"
+                    style={{ left: `${item.x}%`, top: `${item.y}%`, borderColor: item.color || '#93c5fd' }}
+                  >
+                    <strong>{t(item.label)}</strong>
+                    <span>{t(item.value)}</span>
+                    {item.note ? <small>{t(item.note)}</small> : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
-          <div className="badge-row">{badges.map((item, idx) => <span key={item} className={`badge badge-variant-${idx % 4}`}>{t(item)}</span>)}</div>
           <div className="sim-preset-row">
             {cameraPresets.map((preset) => (
               <button
@@ -3050,22 +3278,56 @@ export function PhysicsSimulation({ type = 'default', params = {}, title, config
             ))}
           </div>
           <div className="sim-toolbar">
-            <button className="sim-btn" onClick={() => setRunning((v) => !v)}>
-              {running ? <Pause size={18} /> : <Play size={18} />}
-              <span>{running ? 'Tạm dừng' : 'Chạy tiếp'}</span>
-            </button>
-            <div className="sim-divider" />
-            <button className="sim-btn" onClick={() => setSpeed((v) => clamp(v - 0.25, 0.5, 3))}><Rewind size={18} /><span>Cham hon</span></button>
-            <button className="sim-btn" onClick={() => setSpeed((v) => clamp(v + 0.25, 0.5, 3))}><FastForward size={18} /><span>Nhanh hon</span></button>
-            <div className="sim-divider" />
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, yaw: prev.yaw - 0.24 }))}><RotateCcw size={18} /><span>Quay trai</span></button>
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, yaw: prev.yaw + 0.24 }))}><RotateCw size={18} /><span>Quay phai</span></button>
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, pitch: clamp(prev.pitch + 0.12, -0.15, 1.1) }))}><ArrowUpCircle size={18} /><span>Nang camera</span></button>
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, pitch: clamp(prev.pitch - 0.12, -0.15, 1.1) }))}><ArrowDownCircle size={18} /><span>Ha camera</span></button>
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, distance: clamp(prev.distance - 1, cameraBounds.minDistance, cameraBounds.maxDistance) }))}><ZoomIn size={18} /><span>Zoom in</span></button>
-            <button className="sim-btn" onClick={() => setCamera((prev) => ({ ...prev, distance: clamp(prev.distance + 1, cameraBounds.minDistance, cameraBounds.maxDistance) }))}><ZoomOut size={18} /><span>Zoom out</span></button>
-            <div className="sim-divider" />
-            <button className="sim-btn" onClick={() => setCamera(defaultCameraState())}><Maximize2 size={18} /><span>Reset goc nhin</span></button>
+            <div className="sim-toolbar-group">
+              <button className="sim-btn sim-btn-game sim-btn-primary" onClick={() => setRunning((v) => !v)} title={running ? 'Tạm dừng' : 'Chạy tiếp'}>
+                {running ? <Pause size={16} /> : <Play size={16} />}
+                <span>{running ? 'Dừng' : 'Chạy'}</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setSpeed((v) => clamp(v - 0.25, 0.5, 3))} title="Giảm tốc độ">
+                <Rewind size={16} />
+                <span>Chậm</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setSpeed((v) => clamp(v + 0.25, 0.5, 3))} title="Tăng tốc độ">
+                <FastForward size={16} />
+                <span>Nhanh</span>
+              </button>
+            </div>
+            <div className="sim-toolbar-group">
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, yaw: prev.yaw - 0.24 }))} title="Quay trái">
+                <RotateCcw size={16} />
+                <span>Trái</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, yaw: prev.yaw + 0.24 }))} title="Quay phải">
+                <RotateCw size={16} />
+                <span>Phải</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, pitch: clamp(prev.pitch + 0.12, -0.15, 1.1) }))} title="Nâng camera">
+                <ArrowUpCircle size={16} />
+                <span>Lên</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, pitch: clamp(prev.pitch - 0.12, -0.15, 1.1) }))} title="Hạ camera">
+                <ArrowDownCircle size={16} />
+                <span>Xuống</span>
+              </button>
+            </div>
+            <div className="sim-toolbar-group">
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, distance: clamp(prev.distance - 1, cameraBounds.minDistance, cameraBounds.maxDistance) }))} title="Zoom gần">
+                <ZoomIn size={16} />
+                <span>+</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera((prev) => ({ ...prev, distance: clamp(prev.distance + 1, cameraBounds.minDistance, cameraBounds.maxDistance) }))} title="Zoom xa">
+                <ZoomOut size={16} />
+                <span>-</span>
+              </button>
+              <button className={`sim-btn sim-btn-game ${showOverlayLabels ? 'is-active' : ''}`} onClick={() => setShowOverlayLabels((v) => !v)} title={showOverlayLabels ? 'Ẩn label' : 'Hiện label'}>
+                {showOverlayLabels ? <Eye size={16} /> : <EyeOff size={16} />}
+                <span>{showOverlayLabels ? 'Label' : 'Ẩn'}</span>
+              </button>
+              <button className="sim-btn sim-btn-game" onClick={() => setCamera(defaultCameraState())} title="Đặt lại góc nhìn">
+                <Maximize2 size={16} />
+                <span>Reset</span>
+              </button>
+            </div>
             <span className="sim-speed-badge">Live x{speed.toFixed(2)}</span>
           </div>
           {controls.length ? (

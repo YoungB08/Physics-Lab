@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { LoadingButton } from '../components/LoadingButton';
@@ -26,9 +26,15 @@ export function PhongThiPageClean() {
   const [savingAnswer, setSavingAnswer] = useState(false);
   const currentRef = useRef('');
   const integrityLockRef = useRef(false);
+  const antiCheatRequestRef = useRef(false);
+  const lastTabOutRef = useRef(0);
+  const antiCheatEnabled = room?.exam?.antiCheat?.enabled !== false;
+  const tabOutCount = Number(room?.attempt?.chiTietJson?.tabSwitchCount ?? submitted?.chiTietJson?.tabSwitchCount ?? 0);
+  const warningCount = Number(room?.attempt?.chiTietJson?.warningCount ?? submitted?.chiTietJson?.warningCount ?? 0);
+  const maxTabOut = Number(room?.exam?.antiCheat?.maxTabSwitch ?? 3);
 
   async function pushIntegrity(type: string, detail?: string) {
-    if (!room?.attempt?.id || submitted || integrityLockRef.current) return;
+    if (!room?.attempt?.id || submitted || integrityLockRef.current || !antiCheatEnabled) return;
     try {
       const result = await api.integrityEvent(room.attempt.id, { type, detail });
       if (result?.forced) {
@@ -63,14 +69,14 @@ export function PhongThiPageClean() {
     const interval = window.setInterval(async () => {
       try {
         const status = await api.examRoomStatus(qrToken);
-        if (status.status !== 'STARTED') {
+        if (status.status !== 'STARTED' && !submitted) {
           setError(status.stopReason || 'Đề đã dừng. Hệ thống sẽ đưa bạn ra khỏi phòng thi.');
           window.setTimeout(() => navigate('/tao-de'), 1500);
         }
       } catch {}
     }, 4000);
     return () => window.clearInterval(interval);
-  }, [qrToken, navigate]);
+  }, [qrToken, navigate, submitted]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -89,26 +95,70 @@ export function PhongThiPageClean() {
   }, [submitted]);
 
   useEffect(() => {
-    const handler = async () => {
-      if (!document.hidden || !room?.attempt?.id || submitted) return;
+    async function handleTabOut(trigger: string) {
+      if (!room?.attempt?.id || submitted || !antiCheatEnabled) return;
+      if (antiCheatRequestRef.current) return;
+      const now = Date.now();
+      if (now - lastTabOutRef.current < 1200) return;
+      lastTabOutRef.current = now;
+      antiCheatRequestRef.current = true;
       try {
         const result = await api.tabOut(room.attempt.id);
         const count = Number(result.tabSwitchCount ?? 0);
         const max = Number(result.maxTabSwitch ?? room?.exam?.antiCheat?.maxTabSwitch ?? 3);
         if (result.forced) {
-          setError(result.reason || 'Bạn đã vượt quá số lần rời màn hình cho phép.');
-          window.setTimeout(() => navigate('/tao-de'), 1600);
+          if (result.attempt) {
+            setSubmitted(result.attempt);
+            setRoom((prev: any) => prev ? ({ ...prev, attempt: result.attempt }) : prev);
+            setWarning(result.reason || `Hệ thống đã tự nộp bài do tab out lần ${count}.`);
+          } else {
+            setError(result.reason || 'Hệ thống đã khóa bài làm.');
+          }
         } else {
-          setWarning(`Cảnh báo chống gian lận: bạn đã rời màn hình ${count}/${max} lần.`);
-          setRoom((prev: any) => prev ? ({ ...prev, attempt: { ...prev.attempt, chiTietJson: { ...(prev.attempt?.chiTietJson || {}), tabSwitchCount: count } } }) : prev);
+          const warningIndex = Math.min(count, 2);
+          setWarning(`Cảnh báo anti-cheat lần ${warningIndex}/2: bạn đã tab out ${count}/${max} lần (${trigger}). Lần thứ ${max} hệ thống sẽ tự nộp bài.`);
+          setRoom((prev: any) => prev ? ({
+            ...prev,
+            attempt: {
+              ...prev.attempt,
+              chiTietJson: {
+                ...(prev.attempt?.chiTietJson || {}),
+                tabSwitchCount: count,
+                warningCount: warningIndex
+              }
+            }
+          }) : prev);
         }
-      } catch {}
+      } catch {} finally {
+        antiCheatRequestRef.current = false;
+      }
+    }
+
+    const visibilityHandler = async () => {
+      if (!document.hidden) return;
+      await handleTabOut('ẩn tab');
     };
-    document.addEventListener('visibilitychange', handler);
-    return () => document.removeEventListener('visibilitychange', handler);
-  }, [room, submitted, navigate]);
+    const blurHandler = async () => {
+      if (document.hidden) return;
+      await handleTabOut('mất focus');
+    };
+    const pageHideHandler = async () => {
+      await handleTabOut('rời trang');
+    };
+
+    document.addEventListener('visibilitychange', visibilityHandler);
+    window.addEventListener('blur', blurHandler);
+    window.addEventListener('pagehide', pageHideHandler);
+    return () => {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      window.removeEventListener('blur', blurHandler);
+      window.removeEventListener('pagehide', pageHideHandler);
+    };
+  }, [room, submitted, antiCheatEnabled]);
 
   useEffect(() => {
+    if (!antiCheatEnabled) return;
+
     const block = (e: Event) => {
       e.preventDefault();
       pushIntegrity('copy-blocked');
@@ -146,6 +196,7 @@ export function PhongThiPageClean() {
       setFullscreenOk(ok);
       if (!ok && room?.exam?.antiCheat?.fullScreenRequired) pushIntegrity('fullscreen-exit');
     };
+
     document.addEventListener('copy', block);
     document.addEventListener('cut', block);
     document.addEventListener('paste', block);
@@ -156,6 +207,7 @@ export function PhongThiPageClean() {
     document.addEventListener('fullscreenchange', onFullscreen);
     window.addEventListener('beforeunload', beforeUnload);
     window.addEventListener('blur', onBlur);
+
     const root = document.documentElement as any;
     root?.requestFullscreen?.().then?.(() => setFullscreenOk(true)).catch?.(() => setFullscreenOk(false));
 
@@ -177,7 +229,7 @@ export function PhongThiPageClean() {
       window.removeEventListener('blur', onBlur);
       window.clearInterval(devtoolsCheck);
     };
-  }, [room, submitted]);
+  }, [room, submitted, antiCheatEnabled]);
 
   const questions = room?.exam?.questions ?? [];
   const currentQuestion = questions[currentIndex];
@@ -231,7 +283,9 @@ export function PhongThiPageClean() {
         <div className="badge-row">
           <span className="badge badge-variant-2">Còn lại {formatSeconds(countdown)}</span>
           <span className="badge">Đã làm {progress.answered}/{progress.total}</span>
-          <span className={`badge ${fullscreenOk ? 'badge-soft' : ''}`}>Fullscreen: {fullscreenOk ? 'ON' : 'OFF'}</span>
+          <span className="badge badge-soft">Tab out: {tabOutCount}/{Math.max(maxTabOut, 0)}</span>
+          <span className="badge badge-soft">Cảnh báo: {warningCount}</span>
+          <span className={`badge ${fullscreenOk ? 'badge-soft' : ''}`}>Fullscreen: {antiCheatEnabled ? (fullscreenOk ? 'ON' : 'OFF') : 'TẮT'}</span>
           <span className="badge badge-soft">Chi tiết kết quả: {room.exam.antiCheat?.hideResultDetails ? 'Ẩn' : 'Hiện'}</span>
         </div>
       </div>
@@ -304,6 +358,11 @@ export function PhongThiPageClean() {
             <span className="badge">Đã trả lời: {submitted.chiTietJson?.studentResult?.answered ?? 0}/{submitted.chiTietJson?.studentResult?.total ?? questions.length}</span>
             <span className="badge badge-soft">Tab out: {submitted.chiTietJson?.tabSwitchCount ?? 0}</span>
           </div>
+          {submitted.chiTietJson?.forcedStopReason ? (
+            <div className="note-box" style={{ borderColor: '#fecaca', background: '#fff1f2', color: '#991b1b' }}>
+              {submitted.chiTietJson.forcedStopReason}
+            </div>
+          ) : null}
           {Array.isArray(submitted.chiTietJson?.studentResult?.details) && submitted.chiTietJson.studentResult.details.length ? (
             <div className="table-wrap">
               <table className="table compact-table">
