@@ -305,13 +305,40 @@ function buildOptionsForStem(stem: string, topic: string) {
 
   const subject = normalizeWhitespace(topic || 'chủ đề này');
   const prefix = plainStem.length > 72 ? `${plainStem.slice(0, 72).trim()}...` : plainStem;
-  const correct = normalizeWhitespace(`Kết luận đúng phải bám sát dữ kiện của câu hỏi: ${prefix}`);
+  const variant = plainStem.length % 4;
+  const correctVariants = [
+    `Kết luận đúng phải bám sát dữ kiện của câu hỏi: ${prefix}`,
+    `${subject} chỉ được kết luận sau khi đối chiếu đúng giả thiết và điều kiện áp dụng.`,
+    `Muốn xử lý ${subject} đúng, cần gắn công thức với ý nghĩa vật lý của dữ kiện đã cho.`,
+    `Với ${subject}, không thể kết luận tuyệt đối nếu bỏ qua mô hình và giới hạn của bài toán.`
+  ];
+  const distractorSets = [
+    [
+      `${subject} luôn cho cùng một kết quả dù thay đổi dữ kiện ban đầu.`,
+      `${subject} chỉ cần nhớ công thức mà không cần xét điều kiện áp dụng.`,
+      `${subject} không phụ thuộc mô hình, giả thiết và giới hạn của bài toán.`
+    ],
+    [
+      `Chỉ cần nhìn đáp số cuối cùng là đủ để kết luận về ${subject}.`,
+      `${subject} không cần kiểm tra đơn vị hay chiều của đại lượng.`,
+      `Với ${subject}, mọi dữ kiện phụ đều có thể bỏ qua mà không ảnh hưởng kết quả.`
+    ],
+    [
+      `${subject} có thể suy ra bằng một mẹo cố định cho mọi bài toán.`,
+      `Khi làm ${subject}, không cần phân biệt điều kiện lý tưởng hay thực tế.`,
+      `${subject} luôn đúng ngay cả khi thay đổi giả thiết ban đầu.`
+    ],
+    [
+      `${subject} chỉ là bài học thuộc lòng, không cần phân tích quan hệ giữa các đại lượng.`,
+      `${subject} không liên quan đến bản chất hiện tượng vật lý trong đề.`,
+      `Nếu nhớ công thức của ${subject} thì có thể bỏ qua toàn bộ dữ kiện đi kèm.`
+    ]
+  ];
+  const correct = normalizeWhitespace(correctVariants[variant]);
   return {
     options: [
       correct,
-      normalizeWhitespace(`${subject} luôn cho cùng một kết quả dù thay đổi dữ kiện ban đầu.`),
-      normalizeWhitespace(`${subject} chỉ cần nhớ công thức mà không cần xét điều kiện áp dụng.`),
-      normalizeWhitespace(`${subject} không phụ thuộc mô hình, giả thiết và giới hạn của bài toán.`)
+      ...distractorSets[variant].map((item) => normalizeWhitespace(item))
     ],
     correct,
     explanation: sanitizeExplanation('Đáp án đúng là phương án bám đúng dữ kiện đã nêu trong câu hỏi, thay vì suy luận tuyệt đối hoặc bỏ qua điều kiện áp dụng.')
@@ -341,12 +368,26 @@ function createFallbackQuestion(index: number, topic: string, level: 'DE' | 'TRU
 
 function createStructuredFallbackQuestion(index: number, topic: string, level: 'DE' | 'TRUNG_BINH' | 'KHO', stemOverride?: string) {
   const safeTopic = normalizeWhitespace(topic || 'chủ đề này');
-  const stems: Record<typeof level, string> = {
-    DE: `Phát biểu nào đúng nhất về ${safeTopic}?`,
-    TRUNG_BINH: `Kết luận nào đúng nhất khi phân tích ${safeTopic}?`,
-    KHO: `Trong bài toán tổng quát về ${safeTopic}, nhận định nào đúng nhất?`
+  const focusPool = ['bản chất hiện tượng', 'điều kiện áp dụng', 'quan hệ giữa các đại lượng', 'sai lầm thường gặp'];
+  const focus = focusPool[index % focusPool.length];
+  const stems: Record<typeof level, string[]> = {
+    DE: [
+      `Phát biểu nào đúng nhất về ${safeTopic}?`,
+      `Nhận định nào phù hợp nhất với ${safeTopic}?`,
+      `Khi học ${safeTopic}, kết luận nào sau đây đúng?`
+    ],
+    TRUNG_BINH: [
+      `Kết luận nào đúng nhất khi phân tích ${safeTopic} theo ${focus}?`,
+      `Trong chủ đề ${safeTopic}, phát biểu nào đúng khi xét ${focus}?`,
+      `Nếu xét ${safeTopic} theo dữ kiện đề bài, nhận định nào hợp lý nhất?`
+    ],
+    KHO: [
+      `Trong bài toán tổng quát về ${safeTopic}, nhận định nào đúng nhất?`,
+      `Với ${safeTopic}, mệnh đề nào vẫn đúng khi đổi giả thiết và dữ kiện?`,
+      `Khi tổng hợp kiến thức về ${safeTopic}, kết luận nào chặt chẽ nhất?`
+    ]
   };
-  const finalStem = sanitizeAiStem(stemOverride, stems[level]);
+  const finalStem = sanitizeAiStem(stemOverride, stems[level][index % stems[level].length]);
   const built = buildOptionsForStem(finalStem, safeTopic);
   return {
     noiDung: finalStem,

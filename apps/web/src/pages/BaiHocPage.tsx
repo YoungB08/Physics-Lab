@@ -32,10 +32,16 @@ function inferSimulationType(data: any) {
   if (text.includes('phuong trinh trang thai')) return 'thermal-state-equation-3d';
   if (text.includes('nhiet do') || text.includes('noi nang')) return 'thermal-kinetic-3d';
   if (text.includes('tia x')) return 'xray-tube-3d';
+  if (text.includes('chu ki ban ra') || text.includes('ban ra')) return 'half-life-3d';
+  if (text.includes('alpha')) return 'alpha-decay-3d';
+  if (text.includes('beta')) return 'beta-decay-3d';
+  if (text.includes('gamma')) return 'gamma-decay-3d';
   if (text.includes('phong xa')) return 'radioactive-decay-3d';
   if (text.includes('bohr')) return 'bohr-atom-3d';
   if (text.includes('cau tao hat nhan')) return 'nuclear-structure-3d';
   if (text.includes('nang luong lien ket')) return 'binding-energy-3d';
+  if (text.includes('phan hach')) return 'nuclear-fission-3d';
+  if (text.includes('nhiet hach')) return 'nuclear-fusion-3d';
   if (text.includes('phan ung hat nhan')) return 'nuclear-reaction-3d';
   if (text.includes('kinh hien vi')) return 'microscope-3d';
   if (text.includes('kinh thien van')) return 'telescope-3d';

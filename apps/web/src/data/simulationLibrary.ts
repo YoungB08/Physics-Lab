@@ -1,4 +1,4 @@
-export type SimulationPreset = {
+﻿export type SimulationPreset = {
   type: string;
   label: string;
   group: string;
@@ -7,40 +7,46 @@ export type SimulationPreset = {
 };
 
 export const SIMULATION_LIBRARY: SimulationPreset[] = [
-  { type: 'linear-motion-3d', label: 'Chuyen dong thang deu', group: 'Co hoc', summary: 'Theo doi vi tri, quang duong va van toc theo thoi gian.', defaultParams: { v: 6, t: 10 } },
-  { type: 'accelerated-motion-3d', label: 'Chuyen dong thang bien doi deu', group: 'Co hoc', summary: 'So sanh van toc, gia toc va quang duong khi vat chuyen dong co gia toc khong doi.', defaultParams: { v0: 1, a: 2, t: 5 } },
-  { type: 'free-fall-3d', label: 'Su roi tu do', group: 'Co hoc', summary: 'Quan sat do cao, van toc roi va gia toc trong truong.', defaultParams: { g: 9.81, h0: 30, vx: 1 } },
-  { type: 'circular-motion-3d', label: 'Chuyen dong tron deu', group: 'Co hoc', summary: 'Lien he ban kinh, toc do goc, chu ki va gia toc huong tam.', defaultParams: { r: 4, omega: 1.6 } },
-  { type: 'force-decomposition-3d', label: 'Tong hop va phan tich luc', group: 'Co hoc', summary: 'Phan tich luc thanh phan va hop luc tac dung len vat.', defaultParams: { f1: 6, f2: 8, angle: 60 } },
-  { type: 'newton-laws-3d', label: 'Ba dinh luat Newton', group: 'Co hoc', summary: 'Doi chieu luc tong hop, khoi luong, ma sat va gia toc.', defaultParams: { mass: 2, force: 8, friction: 1 } },
-  { type: 'spring-3d', label: 'Con lac lo xo', group: 'Co hoc', summary: 'Theo doi bien do, nang luong va chu ki dao dong.', defaultParams: { k: 20, mass: 0.5, amplitude: 1.2 } },
-  { type: 'pendulum-3d', label: 'Con lac don', group: 'Co hoc', summary: 'Quan sat dao dong, chu ki va anh huong cua chieu dai day.', defaultParams: { length: 2, amplitude: 0.5, g: 9.81 } },
-  { type: 'wave-3d', label: 'Song co', group: 'Song va dao dong', summary: 'Quan sat nguon song, buoc song va su lan truyen.', defaultParams: { amplitude: 1, wavelength: 3, speed: 2 } },
-  { type: 'standing-wave-3d', label: 'Song dung', group: 'Song va dao dong', summary: 'Nhan dien nut, bung song va dieu kien tao song dung.', defaultParams: { mode: 2, tension: 5, length: 6 } },
-  { type: 'interference-3d', label: 'Giao thoa song', group: 'Song va dao dong', summary: 'Theo doi van cuc dai, cuc tieu va hieu duong di.', defaultParams: { wavelength: 1.5, distance: 4, screen: 8 } },
-  { type: 'electric-field-3d', label: 'Dien truong', group: 'Dien tu', summary: 'Quan sat duong suc dien va quy dao hat mang dien.', defaultParams: { field: 4, charge: 1, velocity: 3 } },
-  { type: 'coulomb-3d', label: 'Luc Coulomb', group: 'Dien tu', summary: 'So sanh do lon luc theo khoang cach va dau dien tich.', defaultParams: { q1: 2, q2: -2, r: 3 } },
-  { type: 'magnetic-field-lines-3d', label: 'Tu truong', group: 'Dien tu', summary: 'Theo doi duong suc tu va huong cam ung tu.', defaultParams: { current: 3, distance: 2, turns: 8 } },
-  { type: 'magnetic-helix-3d', label: 'Hat tich dien trong tu truong', group: 'Dien tu', summary: 'Quan sat quy dao xoan oc duoi tac dung cua luc Lorentz.', defaultParams: { charge: 1, velocity: 4, B: 2 } },
-  { type: 'induction-3d', label: 'Cam ung dien tu', group: 'Dien tu', summary: 'Theo doi tu thong va su xuat hien suat dien dong cam ung.', defaultParams: { B: 2, area: 3, speed: 2 } },
-  { type: 'transformer-3d', label: 'May bien ap', group: 'Dien tu', summary: 'Lien he so vong day voi dien ap va dong dien.', defaultParams: { n1: 100, n2: 200, u1: 220 } },
-  { type: 'rlc-3d', label: 'Mach RLC', group: 'Dien tu', summary: 'Quan sat dien ap, dong dien va cong suat tren mach xoay chieu.', defaultParams: { r: 20, l: 0.2, c: 0.001 } },
-  { type: 'lens-3d', label: 'Thau kinh', group: 'Quang hoc', summary: 'Quan sat tia dac biet, anh tao boi thau kinh va tieu cu.', defaultParams: { f: 12, d: 20, h: 3 } },
-  { type: 'refraction-3d', label: 'Khuc xa anh sang', group: 'Quang hoc', summary: 'Theo doi tia toi, tia khuc xa va mat phan cach.', defaultParams: { n1: 1, n2: 1.5, angle: 35 } },
-  { type: 'eye-optics-3d', label: 'Mat va tat khuc xa', group: 'Quang hoc', summary: 'Lien he khoang vat, tieu cu va vi tri anh tren vong mac.', defaultParams: { f: 2, distance: 25, defect: 1 } },
-  { type: 'magnifier-3d', label: 'Kinh lup', group: 'Quang hoc', summary: 'Quan sat cach kinh lup tao anh ao va do boi giac.', defaultParams: { f: 5, distance: 4, height: 2 } },
-  { type: 'microscope-3d', label: 'Kinh hien vi', group: 'Quang hoc', summary: 'Mo ta duong di tia sang qua vat kinh va thi kinh.', defaultParams: { f1: 1, f2: 4, tube: 16 } },
-  { type: 'telescope-3d', label: 'Kinh thien van', group: 'Quang hoc', summary: 'Quan sat duong di tia song song va do boi goc.', defaultParams: { f1: 20, f2: 5, distance: 40 } },
-  { type: 'thermal-isothermal-3d', label: 'Dang nhiet', group: 'Nhiet hoc', summary: 'Theo doi quan he p-V khi nhiet do khong doi.', defaultParams: { pressure: 1.5, volume: 3, temp: 300 } },
-  { type: 'thermal-isobaric-3d', label: 'Dang ap', group: 'Nhiet hoc', summary: 'Theo doi quan he V-T khi ap suat khong doi.', defaultParams: { pressure: 1, volume: 2, temp: 320 } },
-  { type: 'thermal-state-equation-3d', label: 'Phuong trinh trang thai', group: 'Nhiet hoc', summary: 'Lien he ba dai luong p, V, T trong cung mot he khi.', defaultParams: { pressure: 1, volume: 2.5, temp: 300 } },
-  { type: 'thermal-kinetic-3d', label: 'Dong hoc phan tu khi', group: 'Nhiet hoc', summary: 'Quan sat anh huong cua nhiet do den chuyen dong vi mo.', defaultParams: { temp: 320, particles: 24, volume: 4 } },
-  { type: 'xray-tube-3d', label: 'Ong tia X', group: 'Vat ly hien dai', summary: 'Mo ta electron gia toc va su phat tia X tren bia kim loai.', defaultParams: { voltage: 40, current: 2, target: 1 } },
-  { type: 'bohr-atom-3d', label: 'Mo hinh nguyen tu Bohr', group: 'Vat ly hien dai', summary: 'Theo doi quy dao electron va muc nang luong ro roi.', defaultParams: { n: 2, z: 1 } },
-  { type: 'radioactive-decay-3d', label: 'Phong xa', group: 'Vat ly hien dai', summary: 'Quan sat quy luat giam hat nhan phong xa theo thoi gian.', defaultParams: { lambda: 0.35, N0: 100, emission: 6 } },
-  { type: 'nuclear-structure-3d', label: 'Cau tao hat nhan', group: 'Vat ly hien dai', summary: 'Hinh dung proton, neutron va cau truc hat nhan.', defaultParams: { proton: 6, neutron: 8 } },
-  { type: 'binding-energy-3d', label: 'Nang luong lien ket', group: 'Vat ly hien dai', summary: 'Lien he do hut khoi va nang luong lien ket rieng.', defaultParams: { massDefect: 0.2, binding: 8 } },
-  { type: 'nuclear-reaction-3d', label: 'Phan ung hat nhan', group: 'Vat ly hien dai', summary: 'Theo doi hat toi, san pham sau phan ung va can bang nang luong.', defaultParams: { energy: 200, massDefect: 0.2 } }
+  { type: 'linear-motion-3d', label: 'Chuyển động thẳng đều', group: 'Cơ học', summary: 'Theo dõi vị trí, quãng đường và vận tốc theo thời gian.', defaultParams: { v: 6, t: 10 } },
+  { type: 'accelerated-motion-3d', label: 'Chuyển động thẳng biến đổi đều', group: 'Cơ học', summary: 'So sánh vận tốc, gia tốc và quãng đường khi vật chuyển động có gia tốc không đổi.', defaultParams: { v0: 1, a: 2, t: 5 } },
+  { type: 'free-fall-3d', label: 'Sự rơi tự do', group: 'Cơ học', summary: 'Quan sát độ cao, vận tốc rơi và gia tốc trong trường.', defaultParams: { g: 9.81, h0: 30, vx: 1 } },
+  { type: 'circular-motion-3d', label: 'Chuyển động tròn đều', group: 'Cơ học', summary: 'Liên hệ bán kính, tốc độ góc, chu kì và gia tốc hướng tâm.', defaultParams: { r: 4, omega: 1.6 } },
+  { type: 'force-decomposition-3d', label: 'Tổng hợp và phân tích lực', group: 'Cơ học', summary: 'Phân tích lực thành phần và hợp lực tác dụng lên vật.', defaultParams: { f1: 6, f2: 8, angle: 60 } },
+  { type: 'newton-laws-3d', label: 'Ba định luật Newton', group: 'Cơ học', summary: 'Đối chiếu lực tổng hợp, khối lượng, ma sát và gia tốc.', defaultParams: { mass: 2, force: 8, friction: 1 } },
+  { type: 'spring-3d', label: 'Con lắc lò xo', group: 'Cơ học', summary: 'Theo dõi biên độ, năng lượng và chu kì dao động.', defaultParams: { k: 20, mass: 0.5, amplitude: 1.2 } },
+  { type: 'pendulum-3d', label: 'Con lắc đơn', group: 'Cơ học', summary: 'Quan sát dao động, chu kì và ảnh hưởng của chiều dài dây.', defaultParams: { length: 2, amplitude: 0.5, g: 9.81 } },
+  { type: 'wave-3d', label: 'Sóng cơ', group: 'Sóng và dao động', summary: 'Quan sát nguồn sóng, bước sóng và sự lan truyền.', defaultParams: { amplitude: 1, wavelength: 3, speed: 2 } },
+  { type: 'standing-wave-3d', label: 'Sóng dừng', group: 'Sóng và dao động', summary: 'Nhận diện nút, bụng sóng và điều kiện tạo sóng dừng.', defaultParams: { mode: 2, tension: 5, length: 6 } },
+  { type: 'interference-3d', label: 'Giao thoa sóng', group: 'Sóng và dao động', summary: 'Theo dõi vân cực đại, cực tiểu và hiệu đường đi.', defaultParams: { wavelength: 1.5, distance: 4, screen: 8 } },
+  { type: 'electric-field-3d', label: 'Điện trường', group: 'Điện từ', summary: 'Quan sát đường sức điện và quỹ đạo hạt mang điện.', defaultParams: { field: 4, charge: 1, velocity: 3 } },
+  { type: 'coulomb-3d', label: 'Lực Coulomb', group: 'Điện từ', summary: 'So sánh độ lớn lực theo khoảng cách và dấu điện tích.', defaultParams: { q1: 2, q2: -2, r: 3 } },
+  { type: 'magnetic-field-lines-3d', label: 'Từ trường', group: 'Điện từ', summary: 'Theo dõi đường sức từ và hướng cảm ứng từ.', defaultParams: { current: 3, distance: 2, turns: 8 } },
+  { type: 'magnetic-helix-3d', label: 'Hạt tích điện trong từ trường', group: 'Điện từ', summary: 'Quan sát quỹ đạo xoắn ốc dưới tác dụng của lực Lorentz.', defaultParams: { charge: 1, velocity: 4, B: 2 } },
+  { type: 'induction-3d', label: 'Cảm ứng điện từ', group: 'Điện từ', summary: 'Theo dõi từ thông và sự xuất hiện suất điện động cảm ứng.', defaultParams: { B: 2, area: 3, speed: 2 } },
+  { type: 'transformer-3d', label: 'Máy biến áp', group: 'Điện từ', summary: 'Liên hệ số vòng dây với điện áp và dòng điện.', defaultParams: { n1: 100, n2: 200, u1: 220 } },
+  { type: 'rlc-3d', label: 'Mạch RLC', group: 'Điện từ', summary: 'Quan sát điện áp, dòng điện và công suất trên mạch xoay chiều.', defaultParams: { r: 20, l: 0.2, c: 0.001 } },
+  { type: 'lens-3d', label: 'Thấu kính', group: 'Quang học', summary: 'Quan sát tia đặc biệt, ảnh tạo bởi thấu kính và tiêu cự.', defaultParams: { f: 12, d: 20, h: 3 } },
+  { type: 'refraction-3d', label: 'Khúc xạ ánh sáng', group: 'Quang học', summary: 'Theo dõi tia tới, tia khúc xạ và mặt phân cách.', defaultParams: { n1: 1, n2: 1.5, angle: 35 } },
+  { type: 'eye-optics-3d', label: 'Mắt và tật khúc xạ', group: 'Quang học', summary: 'Liên hệ khoảng vật, tiêu cự và vị trí ảnh trên võng mạc.', defaultParams: { f: 2, distance: 25, defect: 1 } },
+  { type: 'magnifier-3d', label: 'Kính lúp', group: 'Quang học', summary: 'Quan sát cách kính lúp tạo ảnh ảo và độ bội giác.', defaultParams: { f: 5, distance: 4, height: 2 } },
+  { type: 'microscope-3d', label: 'Kính hiển vi', group: 'Quang học', summary: 'Mô tả đường đi tia sáng qua vật kính và thị kính.', defaultParams: { f1: 1, f2: 4, tube: 16 } },
+  { type: 'telescope-3d', label: 'Kính thiên văn', group: 'Quang học', summary: 'Quan sát đường đi tia song song và độ bội giác.', defaultParams: { f1: 20, f2: 5, distance: 40 } },
+  { type: 'thermal-isothermal-3d', label: 'Đẳng nhiệt', group: 'Nhiệt học', summary: 'Theo dõi quan hệ p-V khi nhiệt độ không đổi.', defaultParams: { pressure: 1.5, volume: 3, temp: 300 } },
+  { type: 'thermal-isobaric-3d', label: 'Đẳng áp', group: 'Nhiệt học', summary: 'Theo dõi quan hệ V-T khi áp suất không đổi.', defaultParams: { pressure: 1, volume: 2, temp: 320 } },
+  { type: 'thermal-state-equation-3d', label: 'Phương trình trạng thái', group: 'Nhiệt học', summary: 'Liên hệ ba đại lượng p, V, T trong cùng một hệ khí.', defaultParams: { pressure: 1, volume: 2.5, temp: 300 } },
+  { type: 'thermal-kinetic-3d', label: 'Động học phân tử khí', group: 'Nhiệt học', summary: 'Quan sát ảnh hưởng của nhiệt độ đến chuyển động vi mô.', defaultParams: { temp: 320, particles: 24, volume: 4 } },
+  { type: 'xray-tube-3d', label: 'Ống tia X', group: 'Vật lý hiện đại', summary: 'Mô tả electron gia tốc và sự phát tia X trên bia kim loại.', defaultParams: { voltage: 40, current: 2, target: 1 } },
+  { type: 'bohr-atom-3d', label: 'Mô hình nguyên tử Bohr', group: 'Vật lý hiện đại', summary: 'Theo dõi quỹ đạo electron và mức năng lượng rời rạc.', defaultParams: { n: 2, z: 1 } },
+  { type: 'radioactive-decay-3d', label: 'Phóng xạ tổng quát', group: 'Vật lý hiện đại', summary: 'Quan sát quy luật giảm số hạt nhân phóng xạ theo thời gian.', defaultParams: { lambda: 0.35, N0: 100, emission: 6 } },
+  { type: 'alpha-decay-3d', label: 'Phân rã alpha', group: 'Vật lý hiện đại', summary: 'Theo dõi hạt nhân mẹ phát ra hạt alpha và biến đổi thành hạt nhân con.', defaultParams: { lambda: 0.32, N0: 120, emission: 4 } },
+  { type: 'beta-decay-3d', label: 'Phân rã beta', group: 'Vật lý hiện đại', summary: 'Quan sát sự biến đổi proton-neutron kèm electron hoặc positron phát ra.', defaultParams: { lambda: 0.28, N0: 120, emission: 5 } },
+  { type: 'gamma-decay-3d', label: 'Phân rã gamma', group: 'Vật lý hiện đại', summary: 'Mô tả hạt nhân chuyển mức năng lượng và phát photon gamma.', defaultParams: { lambda: 0.22, N0: 90, emission: 7 } },
+  { type: 'half-life-3d', label: 'Chu kì bán rã', group: 'Vật lý hiện đại', summary: 'Đối chiếu số hạt còn lại với chu kì bán rã và hằng số phóng xạ.', defaultParams: { lambda: 0.35, N0: 160, emission: 6 } },
+  { type: 'nuclear-structure-3d', label: 'Cấu tạo hạt nhân', group: 'Vật lý hiện đại', summary: 'Hình dung proton, neutron và cấu trúc hạt nhân.', defaultParams: { proton: 6, neutron: 8 } },
+  { type: 'binding-energy-3d', label: 'Năng lượng liên kết', group: 'Vật lý hiện đại', summary: 'Liên hệ độ hụt khối, năng lượng liên kết và độ bền hạt nhân.', defaultParams: { massDefect: 0.2, binding: 8 } },
+  { type: 'nuclear-reaction-3d', label: 'Phản ứng hạt nhân', group: 'Vật lý hiện đại', summary: 'Theo dõi hạt tới, sản phẩm sau phản ứng và cân bằng năng lượng.', defaultParams: { energy: 200, massDefect: 0.2 } },
+  { type: 'nuclear-fission-3d', label: 'Phân hạch', group: 'Vật lý hiện đại', summary: 'Mô tả hạt nhân nặng vỡ thành hai mảnh và giải phóng năng lượng.', defaultParams: { energy: 220, massDefect: 0.24 } },
+  { type: 'nuclear-fusion-3d', label: 'Nhiệt hạch', group: 'Vật lý hiện đại', summary: 'Theo dõi hai hạt nhân nhẹ hợp lại thành hạt nhân nặng hơn.', defaultParams: { energy: 260, massDefect: 0.18 } }
 ];
 
 export function findSimulationPreset(type?: string) {
@@ -63,8 +69,8 @@ function normalize(input: string) {
   return input
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/d/g, 'd')
-    .replace(/�/g, 'D')
+    .replace(/đ/g, 'd')
+    .replace(/Ð/g, 'D')
     .toLowerCase();
 }
 
@@ -73,6 +79,6 @@ export function resolveVisualTypeForLesson(meta: { ten?: string; moTa?: string; 
   if (/(dang nhiet|dang ap|phuong trinh trang thai|nhiet do|noi nang|chat khi|nhiet)/i.test(haystack)) return FALLBACK_VISUAL_TYPES.NHIET;
   if (/(quang|khuc xa|phan xa|thau kinh|mat|kinh lup|kinh hien vi|kinh thien van)/i.test(haystack)) return FALLBACK_VISUAL_TYPES.QUANG;
   if (/(dien truong|dong dien|mach|rlc|cam ung|tu truong|bien ap|coulomb|lorentz)/i.test(haystack)) return FALLBACK_VISUAL_TYPES.DIEN_TU;
-  if (/(phong xa|hat nhan|bohr|lien ket|phan ung|tia x|luong tu)/i.test(haystack)) return FALLBACK_VISUAL_TYPES.HIEN_DAI;
+  if (/(phong xa|hat nhan|bohr|lien ket|phan ung|phan ha.ch|nhiet ha.ch|tia x|luong tu|alpha|beta|gamma|ban ra)/i.test(haystack)) return FALLBACK_VISUAL_TYPES.HIEN_DAI;
   return FALLBACK_VISUAL_TYPES.CO_HOC;
 }

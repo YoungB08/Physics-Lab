@@ -151,9 +151,33 @@ const BLUEPRINTS: LessonSimulationBlueprint[] = [
     ['Proton', 'Hat mang dien duong cau tao nen hat nhan.'],
     ['Neutron', 'Hat trung hoa gop phan on dinh hat nhan.']
   ]),
+  makeBlueprint('phan ra alpha', 'alpha-decay-3d', 'Theo doi hat nhan me phat ra hat alpha va doi thanh hat nhan con.', [
+    ['Hat alpha', 'Cum 2 proton va 2 neutron duoc phong ra khoi hat nhan.'],
+    ['Hat nhan con', 'So khoi giam 4 va dien tich giam 2 sau phan ra.']
+  ]),
+  makeBlueprint('phan ra beta', 'beta-decay-3d', 'Quan sat qua trinh bien doi neutron proton kem hat beta.', [
+    ['Hat beta', 'Co the la electron hoac positron tuy co che bien doi.'],
+    ['So proton neutron', 'Thay doi theo dinh luat bao toan dien tich va so nucleon.']
+  ]),
+  makeBlueprint('phan ra gamma', 'gamma-decay-3d', 'Minh hoa hat nhan kich thich phat photon gamma de ve trang thai ben hon.', [
+    ['Photon gamma', 'Mang nang luong lon nhung khong lam doi so proton va neutron.'],
+    ['Muc nang luong', 'Hat nhan chuyen tu muc cao xuong muc thap hon.']
+  ]),
+  makeBlueprint('chu ki ban ra', 'half-life-3d', 'Doi chieu quy luat giam theo ham mu va y nghia cua T1/2.', [
+    ['N(t)', 'So hat nhan chua phan ra giam theo thoi gian.'],
+    ['Chu ki ban ra', 'Sau moi T1/2 so hat con lai bang mot nua truoc do.']
+  ]),
   makeBlueprint('phong xa', 'radioactive-decay-3d', 'Phan biet hat me, buc xa phat ra va bo dem.', [
     ['Hat nhan me', 'Hat nhan khong ben truoc khi phan ra.'],
     ['Buc xa', 'Co the la alpha, beta hoac gamma tuy co che.']
+  ]),
+  makeBlueprint('phan hach', 'nuclear-fission-3d', 'Quan sat hat nhan nang hap thu notron roi vo thanh hai manh nhe hon.', [
+    ['Hat nhan nang', 'Trang thai ban dau de xay ra qua trinh phan hach.'],
+    ['Notron va nang luong', 'Sau phan hach co the giai phong notron moi va nang luong lon.']
+  ]),
+  makeBlueprint('nhiet hach', 'nuclear-fusion-3d', 'Theo doi hai hat nhan nhe hop lai trong dieu kien nang luong cao.', [
+    ['Hai hat nhan nhe', 'Vuot qua luc day Coulomb de tien den hop nhat.'],
+    ['San pham hop nhat', 'Hat nhan moi ben hon va kem nang luong giai phong.']
   ]),
   makeBlueprint('phan ung hat nhan', 'nuclear-reaction-3d', 'Quan sat hat ban pha, hat dich va san pham phan ung.', [
     ['Hat ban pha', 'Hat toi gay ra phan ung hat nhan.'],

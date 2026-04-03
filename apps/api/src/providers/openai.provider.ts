@@ -73,6 +73,11 @@ function questionGenerationInstructions(input: AIRequestInput) {
     'Moi cau phai co 4 lua chon A B C D, 1 dap an dung.',
     `Muc do yeu cau: ${level}. Lop: ${grade}. Bai hoc: ${lessonSlug}.`,
     'Noi dung phai la tieng Viet tu nhien, khong mo ta ve schema, khong lap key JSON vao stem.',
+    'Khong duoc lap lai hoac chi doi vai tu giua cac cau.',
+    'Moi cau phai kiem tra mot goc khac nhau: khai niem, dieu kien ap dung, so sanh, nhan biet sai lam, suy luan tu cong thuc, doc do thi neu phu hop.',
+    'Khong duoc dung cung mot bo lua chon cho nhieu cau.',
+    'Phan bo dap an dung da dang giua A, B, C, D; khong de tat ca cung mot vi tri.',
+    'Neu chu de co tinh toan, uu tien it nhat 1-2 cau co du kien cu the; neu chu de thuan ly thuyet, uu tien cau hoi ve ban chat va dieu kien ap dung.',
     'Giai thich ngan gon, dung ban chat vat ly.'
   ].join('\n');
 }

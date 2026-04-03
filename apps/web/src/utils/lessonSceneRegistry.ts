@@ -77,7 +77,13 @@ const REGISTRY: LessonSceneRegistryItem[] = [
   { key: 'mau nguyen tu bohr', sceneId: 'scene-modern-bohr-atom-model', sceneKind: 'bohrAtom' },
   { key: 'tia x', sceneId: 'scene-modern-xray-tube', sceneKind: 'xrayTube' },
   { key: 'cau tao hat nhan', sceneId: 'scene-nuclear-structure-cluster', sceneKind: 'nuclearCluster' },
+  { key: 'phan ra alpha', sceneId: 'scene-nuclear-alpha-decay', sceneKind: 'decayChamber' },
+  { key: 'phan ra beta', sceneId: 'scene-nuclear-beta-decay', sceneKind: 'decayChamber' },
+  { key: 'phan ra gamma', sceneId: 'scene-nuclear-gamma-decay', sceneKind: 'decayChamber' },
+  { key: 'chu ki ban ra', sceneId: 'scene-nuclear-half-life', sceneKind: 'decayChamber' },
   { key: 'phong xa', sceneId: 'scene-nuclear-radioactive-decay', sceneKind: 'decayChamber' },
+  { key: 'phan hach', sceneId: 'scene-nuclear-fission', sceneKind: 'nuclearReaction' },
+  { key: 'nhiet hach', sceneId: 'scene-nuclear-fusion', sceneKind: 'nuclearReaction' },
   { key: 'phan ung hat nhan', sceneId: 'scene-nuclear-reaction-products', sceneKind: 'nuclearReaction' },
   { key: 'nang luong lien ket', sceneId: 'scene-nuclear-binding-energy-well', sceneKind: 'bindingWell' }
 ];

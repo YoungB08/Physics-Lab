@@ -97,9 +97,15 @@ const SIM_SCENE_KIND: Record<string, string> = {
   'xray-tube-3d': 'xrayTube',
   'bohr-atom-3d': 'bohrAtom',
   'radioactive-decay-3d': 'decayChamber',
+  'alpha-decay-3d': 'decayChamber',
+  'beta-decay-3d': 'decayChamber',
+  'gamma-decay-3d': 'decayChamber',
+  'half-life-3d': 'decayChamber',
   'nuclear-structure-3d': 'nuclearCluster',
   'binding-energy-3d': 'bindingWell',
-  'nuclear-reaction-3d': 'nuclearReaction'
+  'nuclear-reaction-3d': 'nuclearReaction',
+  'nuclear-fission-3d': 'nuclearReaction',
+  'nuclear-fusion-3d': 'nuclearReaction'
 };
 
 function titleFromType(type: string) {

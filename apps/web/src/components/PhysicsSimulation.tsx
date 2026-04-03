@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+ï»¿import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Play, Pause, Rewind, FastForward, RotateCcw, RotateCw, ArrowUpCircle, ArrowDownCircle, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { generateLessonIllustration, getVisualProfile } from '../utils/visualProfiles';
@@ -120,7 +120,7 @@ type SimulationState = {
 
 function looksCorruptedText(value: unknown) {
   if (typeof value !== 'string') return false;
-  return /Aƒ|A†|A¢|i¿½|\bundefined\b|\bnull\b/i.test(value);
+  return /AÆ’|Aâ€ |AÂ¢|iÂ¿Â½|\bundefined\b|\bnull\b/i.test(value);
 }
 
 function cleanUiText(value: unknown, fallback: string) {
@@ -416,285 +416,153 @@ function sceneAnnotations(sceneKind: string, config: Record<string, unknown> = {
   if (Array.isArray(config.lessonComponents) && config.lessonComponents.length) {
     return (config.lessonComponents as Array<{ label?: string; note?: string }>)
       .map((item) => ({
-        label: String(item.label || 'ThAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n'),
-        note: String(item.note || '')
+        label: cleanUiText(item.label, 'Thanh phan chinh'),
+        note: cleanUiText(item.note, 'Chi tiet nay can duoc doi chieu voi cong thuc va du lieu quan sat.')
       }))
       .filter((item) => item.label.trim() && item.note.trim());
   }
-  switch (sceneKind) {
-    case 'linearRail':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¡AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ Ray & xe', note: 'Xe chAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡y AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn ray. KhoAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ch tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc tAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng theo vAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ MAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A¦AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©i tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc v', note: 'VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¢i, quAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng: x = xAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬ + vAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t.' }
-      ];
-    case 'acceleratedCart':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ MAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A¦AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©i vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc (xanh)', note: 'VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc tAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n theo thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ai gian: v = vAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬ + aAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ MAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A¦AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©i gia tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc (cam)', note: 'Gia tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¢i vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn: a = const. HAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng theo lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¢ng hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£p.' }
-      ];
-    case 'freeFallTower':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aº ThAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡p & thang AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œo h', note: 'MAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc chiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au cao chia AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ theo dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµi quAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang rAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡ VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t rAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i', note: 'RAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± do: h = AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½gAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·tAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A², v = gAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t. BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A qua ma sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­.' }
-      ];
-    case 'circularRotor':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²n quAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o', note: 'BAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡n kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh r cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹nh. TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A i v = AƒÆ’A†a€™Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A°AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·r.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t chuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²n', note: 'Gia tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m a_ht = AƒÆ’A†a€™Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A°AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·r luAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´n hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A o tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m.' }
-      ];
-    case 'forceBoard':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ FAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A FAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ (xanh/lam)', note: 'Hai lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c thAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ng thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ai lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ F hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£p lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c (cam)', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£p lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c = FAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A+FAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ (quy tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯c hAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¬nh bAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¬nh hAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh). GAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢y gia tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc.' }
-      ];
-    case 'newtonCart':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©o F (xanh)', note: 'LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ng lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t theo AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AL 2 Newton: a = F_net/m.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c ma sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t F_ms (cam)', note: 'Ma sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n chiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au chuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng. AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AL 3: phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t.' }
-      ];
-    case 'inclinedPlane':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ TrAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c P = mg', note: 'PhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch thAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh PAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·sinAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± (dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ac mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng) vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  PAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·cosAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± (vuAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng gAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³c).' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ PhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c N', note: 'N = PAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·cosAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±. LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c ma sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t F_ms = AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¼N tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ng dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ac mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng.' }
-      ];
-    case 'gravityOrbit':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­AƒÆ’A¢a‚¬A¡Aƒa€sA‚A NgAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´i sao AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ khAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn', note: 'LAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  nguAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“n gAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A§a lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c hAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºt F = GmAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AmAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A². AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¾ gAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m quay.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A HAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh tinh quAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o', note: 'LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A«n cung cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ duy trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¬ quAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²n.' }
-      ];
-    case 'springMass':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¡Aƒa€sA‚A° LAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A² xo (co giAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n)', note: 'F_dh = AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“kAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·x (AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AL Hooke). LAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c luAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´n hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A±ng.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A…a€œAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·ng m', note: 'Dao AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng SHM: x = AAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·cos(AƒÆ’A†a€™Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A°t), AƒÆ’A†a€™Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° = AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¡(k/m). BiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ A cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹nh.' }
-      ];
-    case 'pendulumArc':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ QuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·ng (con lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯c)', note: 'TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i biAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn: v=0, thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿ nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng max. TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡y: v=vmax, AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng max.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œ Cung AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang dao AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng', note: 'T = 2AƒÆ’A†a€™Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¡(l/g) AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ thuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢c m vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  A (khi A nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A).' }
-      ];
-    case 'travelingWave':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œ SAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng lan truyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚An', note: 'Pha sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng lan tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« nguAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“n. MAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚Ai AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m dao AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng theo phAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng ngang.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A BAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºc sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»', note: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A» = v/f. KhoAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ch giAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯a 2 AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ng pha liAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚An kAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A.' }
-      ];
-    case 'interferenceField':
-      return [
-        { label: 'SAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A SAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A hai nguAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“n', note: 'CAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ng tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ f, cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ng biAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢. PhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ng thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ai.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¦ VAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i/tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢u', note: 'CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i: dAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢dAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A = kAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A». CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢u: dAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢dAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A = (k+AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½)AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A».' }
-      ];
-    case 'standingWave':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ NAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºt sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m biAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A±ng 0, AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©ng yAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn. Hai AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§u dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢y cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹nh lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  nAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºt.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ng sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m dao AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡nh nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t. ChiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A i dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢y: L = nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»/2.' }
-      ];
-    case 'electricPlates':
-      return [
-        { label: '+ BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c dAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng / AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n AƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang E AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« + sang AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“. E = U/d.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n q', note: 'BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c F = qAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·E theo chiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿u q>0. QuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o parabol.' }
-      ];
-    case 'coulombCharges':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ qAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A (AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A) / AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµ qAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ (lam)', note: 'KhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥u AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ hAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºt. CAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ng dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥u AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A©y. TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡ 1/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A².' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A VectAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c F', note: 'F = kqAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AqAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A². NAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A±m trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi hai AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch.' }
-      ];
-    case 'ohmCircuit':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ NguAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n EMF', note: 'Cung cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p hiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡u AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿ U. DAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n I = U/R.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¨n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£i (AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n trAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸)', note: 'TiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng suAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t P = UAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·I = IAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²R. AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng ~ I.' }
-      ];
-    case 'magnetField':
-      return [
-        { label: 'N AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ S (cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c nam chAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m)', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©c tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi ra tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯c (N), AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A o cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c Nam (S).' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©c tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A«', note: 'KhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©p kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n. MAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©c biAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢u thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡nh |B|.' }
-      ];
-    case 'lorentzHelix':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ B tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚An', note: 'TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ac trAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥c. CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£m AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©ng tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« B = const.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œ HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n xoAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯n AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œc', note: 'F = qvAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AB. ThAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nh phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n vAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¦Aƒa€sA‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥B tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²n, vAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥B tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿n dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ac.' }
-      ];
-    case 'inductionCoil':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡ CuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢n dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢y (solenoid)', note: 'Khi tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« thAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¦ biAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿n thiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ xuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t hiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n suAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµ.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A¢a‚¬A¡Aƒa€sA‚A§AƒÆ’A¢a‚¬A¡Aƒa€sA‚A² Nam chAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m di chuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢n', note: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµ = AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“dAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¦/dt (AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AL Faraday). ChiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²ng I theo quy tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯c Lenz.' }
-      ];
-    case 'rlcPanel':
-      return [
-        { label: 'R AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ L AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ C ba phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­', note: 'R tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥; L vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  C lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°u nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng; cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸ng khi Z_L = Z_C.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ dao AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng', note: 'Khi cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸ng: I max, Z min = R. Pha AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n AƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡p = pha dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²ng.' }
-      ];
-    case 'transformerCore':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ LAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµi sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯t tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A«', note: 'DAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A«n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« thAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¦ giAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯a hai cuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢n. KhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿p xAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºc trAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿p.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡AƒÆ’A†a€™Aƒa€sA‚A£AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡ CuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢n sAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p / thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A© cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p', note: 'NAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A/NAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ = UAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A/UAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡. MAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡y lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½ tAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸ng: PAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A = PAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡.' }
-      ];
-    case 'refractionTank':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A MAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ch hai mAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´i trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang', note: 'nAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AsinAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A = nAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡sinAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡. Tia gAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£y nhiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡n khi vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A o mt cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ n lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡n.' },
-        { label: '| PhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡p tuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿n', note: 'GAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³c tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºi AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A  gAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³c khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºc xAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œo tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡p tuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿n.' }
-      ];
-    case 'lensBench':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° ThAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥u kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ (f>0)', note: 'Tia qua quang tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng. Tia song song hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i F.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t / AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh', note: '1/f = 1/d + 1/d\'. AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t khi d>f. AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£o khi d<f.' }
-      ];
-    case 'eyeOptics':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ ThAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A§y tinh thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ (lens)', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au tiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ dAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ch tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m. CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹: f quAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ ngAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯n AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£nh trAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºc VM.' },
-        { label: '| VAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµng mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c (retina)', note: 'AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh rAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµ khi AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¡NG trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn vAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµng mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c. CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh bAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿u lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡ch.' }
-      ];
-    case 'magnifierLens':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° KAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºp (thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥u kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥)', note: 'VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·t trong tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± (d < f). Tia lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n kAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£o phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i', note: 'AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢nh lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡n, cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ng chiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Au vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºi vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t. G = AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚A/f (mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯t thAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A° giAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n).' }
-      ];
-    case 'microscopeRig':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh (tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A)', note: 'TAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£nh thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t AAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚ABAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A§a vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° ThAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh (tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡n)', note: 'LAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A m kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh lAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºp quan sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t AAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚ABAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A. G = LAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚A/(fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡).' }
-      ];
-    case 'telescopeRig':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh (fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A rAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥t lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºn)', note: 'Thu chAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹m tia song song tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A« vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t xa AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£nh thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i tiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªu AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢m.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° ThAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh (fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A)', note: 'NgAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯m AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£nh trung gian. BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢i giAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡c G = fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A/fAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡ (mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯t thAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A° giAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n).' }
-      ];
-    case 'photoelectricCell':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¼ Catot kim loAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i', note: 'Electron bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©t ra khi nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­n photon cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ hAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½ AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A°AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ A (cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng thoAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t).' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹Aƒa€¦A¢a‚¬A“AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¡Aƒa€sA‚A¬ Photon AƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡nh sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng', note: 'NAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng: AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµ = hAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½. ChAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A° tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ quyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿t AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹nh khAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©t eAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A».' }
-      ];
-    case 'bohrAtom':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n (proton+neutron)', note: 'Mang AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n dAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng Ze. HAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºt electron theo lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c Coulomb.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ QuAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡o electron n=1,2,3...', note: 'Electron nhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£y mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©c phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t/hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥p thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥ photon: hAƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A½ = E_n2 AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ E_n1.' }
-      ];
-    case 'decayChamber':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A…a€œAƒÆ’A¢a‚¬A¡Aƒa€sA‚A  HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng xAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¹', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n khAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ng bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚An. PhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n rAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ alpha, beta hoAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·c gamma.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ng xAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t ra', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± (AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A´AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A‚A¡He), AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A» (eAƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A»), AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ (photon nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng cao).' }
-      ];
-    case 'nuclearReaction':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t bAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¯n phAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºi va chAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡m vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºi hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch. PhAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£i cAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A³ ngAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¦AƒA¢A¢a€sA¬A…a€œAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¦ SAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A©m phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£n AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©ng', note: 'BAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A£o toAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A n sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ khAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œi A, sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ch Z, nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng, AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng.' }
-      ];
-    case 'nuclearCluster':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A°AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ Proton (AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A)', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t mang AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡n +e trong hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n. SAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ proton Z = nguyAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ sAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œ.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aª Neutron (xAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡m)', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t trung hAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A²a. N = A AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A¢a‚¬A¹AƒA¢A¢a€sA¬A‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a‚¬A¾A‚A¢ Z. GiAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aºp AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¢n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹nh hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n qua lAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A±c mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡nh.' }
-      ];
-    case 'bindingWell':
-      return [
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¦A¢a‚¬A“ GiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿ng thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿ nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng', note: 'HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t liAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn kAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿t nAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A±m AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¦Aƒa€sA‚A¸ mAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©c nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng AƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m so vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºi trAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ng thAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i tAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A± do.' },
-        { label: 'AƒÆ’A†a€™Aƒa€sA‚A¢AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬AƒA¢A¢a€sA¬A‚AAƒÆ’A¢a‚¬A¡Aƒa€sA‚A HAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t liAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn kAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿t', note: 'CAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A§n nAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ng lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng liAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aªn kAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¿t AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AE = AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚AmAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A·cAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A² AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡ch khAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ai hAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t nhAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢n.' }
-      ];
-    default:
-      return [
-        { label: 'VAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A­t thAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢ chAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­nh', note: 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A¢a‚¬A¡Aƒa€sA‚AAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡i lAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A£ng trung tAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¢m cAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚A§a mAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A´ phAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A¡Aƒa€sA‚Ang.' },
-        { label: 'DAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A¥u hiAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡u quan sAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¡t', note: 'Theo dAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚Aµi hAƒÆ’A†a€™AƒA¢A¢a€sA¬A‚A AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°AƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Aºng chuyAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A¢a‚¬A AƒA¢A¢a€sA¬A¢a€zA¢n AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a€sA¬A…A¾Aƒa€sA‚A¢ng, chu kAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¬ hoAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·c vAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¹ trAƒÆ’A†a€™Aƒa€ A¢a‚¬a„¢AƒÆ’A¢a‚¬A¡Aƒa€sA‚A­ AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¾AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€¹A…a€œAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚AºAƒÆ’A¢a‚¬A¡Aƒa€sA‚A·c biAƒÆ’A†a€™Aƒa€sA‚A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚A¡t.' }
-      ];
-  }
+  return sceneAnnotationsSafe(sceneKind);
 }
 
 function sceneAnnotationsSafe(sceneKind: string): SceneAnnotation[] {
   switch (sceneKind) {
     case 'linearRail':
       return [
-        { label: 'Xe vA  ray', note: 'Vaº­t chuya»ƒn A‘a»™ng da»c theo ma»™t tra»¥c cA³ ma»‘c chia A‘a»ƒ A‘a»c va»‹ trA­.' },
-        { label: 'Vaº­n ta»‘c khA´ng A‘a»•i', note: 'Ma»—i khoaº£ng tha»i gian baº±ng nhau thA¬ vaº­t A‘i A‘Æ°a»£c quA£ng A‘Æ°a»ng baº±ng nhau.' }
+        { label: 'Xe va ray', note: 'Vat chuyen dong doc theo ray de quan sat vi tri va huong chuyen dong.' },
+        { label: 'Van toc khong doi', note: 'Trong cac khoang thoi gian bang nhau, vat di duoc cac quang duong bang nhau.' }
       ];
     case 'acceleratedCart':
       return [
-        { label: 'MA©i tAªn vaº­n ta»‘c', note: 'Aa»™ dA i mA©i tAªn thay A‘a»•i theo v = v0 + a.t.' },
-        { label: 'Gia ta»‘c', note: 'Gia ta»‘c A‘Æ°a»£c gia»¯ khA´ng A‘a»•i trong sua»‘t quA¡ trA¬nh mA´ pha»ng.' }
+        { label: 'Mui ten van toc', note: 'Do dai mui ten thay doi theo v = v0 + a.t.' },
+        { label: 'Gia toc', note: 'Gia toc duoc giu khong doi trong suot qua trinh mo phong.' }
       ];
     case 'freeFallTower':
       return [
-        { label: 'Vaº­t rÆ¡i', note: 'Ba» qua sa»©c caº£n khA´ng khA­, vaº­n ta»‘c tAƒng A‘a»u theo tha»i gian.' },
-        { label: 'ThA¡p A‘a»™ cao', note: 'Ma»‘c chia»u cao giAºp A‘a»‘i chiaº¿u quA£ng A‘Æ°a»ng rÆ¡i vA  A‘a»™ cao cA²n laº¡i.' }
+        { label: 'Vat roi', note: 'Bo qua suc can khong khi, van toc tang deu theo thoi gian.' },
+        { label: 'Thap do cao', note: 'Moc chia cao giup doi chieu quang duong roi va do cao con lai.' }
       ];
     case 'circularRotor':
       return [
-        { label: 'BA¡n kA­nh quay', note: 'BA¡n kA­nh quyaº¿t A‘a»‹nh ma»‘i liAªn ha»‡ gia»¯a omega, v vA  a hÆ°a»›ng tA¢m.' },
-        { label: 'Gia ta»‘c hÆ°a»›ng tA¢m', note: 'Vector gia ta»‘c luA´n hÆ°a»›ng va» tA¢m quay, khA´ng cA¹ng hÆ°a»›ng va»›i v.' }
+        { label: 'Ban kinh quay', note: 'Ban kinh quyet dinh moi lien he giua omega, v va gia toc huong tam.' },
+        { label: 'Gia toc huong tam', note: 'Vector gia toc luon huong ve tam quay.' }
+      ];
+    case 'forceBoard':
+      return [
+        { label: 'Luc thanh phan', note: 'Tach cac luc thanh phan de xac dinh hop luc tac dung len vat.' },
+        { label: 'Hop luc', note: 'Hop luc cho biet xu huong chuyen dong va gia toc cua vat.' }
+      ];
+    case 'newtonCart':
+      return [
+        { label: 'Xe thi nghiem', note: 'Dung de doi chieu hop luc, khoi luong va gia toc.' },
+        { label: 'Luc tac dung', note: 'Luc keo va luc can giup nhin ro trang thai can bang hay mat can bang.' }
+      ];
+    case 'inclinedPlane':
+      return [
+        { label: 'Mat phang nghieng', note: 'Tach trong luc thanh hai thanh phan doc va vuong goc mat phang.' },
+        { label: 'Ma sat', note: 'Luc can xuat hien khi vat co xu huong truot tren mat phang.' }
       ];
     case 'springOscillator':
       return [
-        { label: 'Va»‹ trA­ cA¢n baº±ng', note: 'Aa»™ la»‡ch kha»i va»‹ trA­ cA¢n baº±ng quyaº¿t A‘a»‹nh la»±c ha»“i pha»¥c.' },
-        { label: 'NAƒng lÆ°a»£ng dao A‘a»™ng', note: 'Aa»™ng nAƒng vA  thaº¿ nAƒng biaº¿n A‘a»•i qua laº¡i theo chu kA¬.' }
+        { label: 'Vi tri can bang', note: 'Do lech khoi vi tri can bang quyet dinh luc phuc hoi cua lo xo.' },
+        { label: 'Nang luong dao dong', note: 'Dong nang va the nang bien doi qua lai theo chu ki.' }
       ];
     case 'pendulum':
       return [
-        { label: 'GA³c la»‡ch', note: 'BiAªn A‘a»™ gA³c nha» cho phA©p dA¹ng cA´ng tha»©c xaº¥p xa»‰ dao A‘a»™ng A‘ia»u hA²a.' },
-        { label: 'Chu kA¬', note: 'Chu kA¬ pha»¥ thua»™c cha»§ yaº¿u vA o chia»u dA i dA¢y vA  gia ta»‘c tra»ng trÆ°a»ng.' }
+        { label: 'Goc lech', note: 'Bien do goc nho cho phep ap dung mo hinh dao dong dieu hoa.' },
+        { label: 'Chu ki', note: 'Chu ki phu thuoc chu yeu vao chieu dai day va gia toc trong truong.' }
       ];
     case 'waveTank':
       return [
-        { label: 'Ngua»“n sA³ng', note: 'Ngua»“n dao A‘a»™ng taº¡o ra cA¡c maº·t sA³ng lan truya»n trong mA´i trÆ°a»ng.' },
-        { label: 'Pha sA³ng', note: 'CA¡c A‘ia»ƒm cA¹ng pha cA¡ch nhau ma»™t sa»‘ nguyAªn laº§n bÆ°a»›c sA³ng.' }
+        { label: 'Nguon song', note: 'Nguon dao dong tao ra cac mat song lan truyen trong moi truong.' },
+        { label: 'Pha song', note: 'Cac diem cung pha cach nhau mot so nguyen lan buoc song.' }
       ];
     case 'interferenceTank':
       return [
-        { label: 'Hai ngua»“n kaº¿t ha»£p', note: 'Hai ngua»“n cA¹ng taº§n sa»‘ vA  A‘a»™ la»‡ch pha a»•n A‘a»‹nh taº¡o giao thoa.' },
-        { label: 'Vaº¡ch ca»±c A‘aº¡i ca»±c tia»ƒu', note: 'Hia»‡u A‘Æ°a»ng A‘i quyaº¿t A‘a»‹nh va»‹ trA­ tAƒng cÆ°a»ng hay tria»‡t tiAªu.' }
+        { label: 'Hai nguon ket hop', note: 'Hai nguon cung tan so va do lech pha on dinh tao giao thoa.' },
+        { label: 'Van cuc dai cuc tieu', note: 'Hieu duong di quyet dinh vi tri tang cuong hay triet tieu.' }
       ];
     case 'standingString':
       return [
-        { label: 'NAºt sA³ng', note: 'NAºt lA  A‘ia»ƒm luA´n cA³ biAªn A‘a»™ baº±ng 0.' },
-        { label: 'Ba»¥ng sA³ng', note: 'Ba»¥ng lA  A‘ia»ƒm cA³ biAªn A‘a»™ dao A‘a»™ng ca»±c A‘aº¡i.' }
+        { label: 'Nut song', note: 'Nut la diem luon co bien do bang 0.' },
+        { label: 'Bung song', note: 'Bung la diem co bien do dao dong cuc dai.' }
       ];
     case 'electricPlates':
       return [
-        { label: 'Baº£n ca»±c', note: 'Aia»‡n trÆ°a»ng A‘a»u gia»¯a hai baº£n song song hÆ°a»›ng ta»« dÆ°Æ¡ng sang A¢m.' },
-        { label: 'Haº¡t mang A‘ia»‡n', note: 'Qua»¹ A‘aº¡o pha»¥ thua»™c daº¥u A‘ia»‡n tA­ch, vaº­n ta»‘c A‘aº§u vA  cÆ°a»ng A‘a»™ A‘ia»‡n trÆ°a»ng.' }
+        { label: 'Ban cuc', note: 'Dien truong deu giua hai ban song song huong tu duong sang am.' },
+        { label: 'Hat mang dien', note: 'Quy dao phu thuoc dau dien tich, van toc dau va cuong do dien truong.' }
       ];
     case 'coulombCharges':
       return [
-        { label: 'Hai A‘ia»‡n tA­ch A‘ia»ƒm', note: 'La»±c Coulomb tAƒng khi A‘ia»‡n tA­ch la»›n hÆ¡n vA  khoaº£ng cA¡ch nha» hÆ¡n.' },
-        { label: 'HÆ°a»›ng la»±c', note: 'CA¹ng daº¥u A‘aº©y nhau, khA¡c daº¥u hAºt nhau trAªn A‘Æ°a»ng na»‘i tA¢m.' }
+        { label: 'Hai dien tich diem', note: 'Luc Coulomb tang khi dien tich lon hon va khoang cach nho hon.' },
+        { label: 'Huong luc', note: 'Cung dau day nhau, khac dau hut nhau tren duong noi tam.' }
       ];
     case 'ohmCircuit':
       return [
-        { label: 'Ngua»“n vA  A‘ia»‡n tra»Y', note: 'Aa»™ la»›n dA²ng A‘ia»‡n thay A‘a»•i theo I = U/R.' },
-        { label: 'Aa»“ tha»‹ A‘aº¡i lÆ°a»£ng', note: 'Theo dAµi A‘a»“ng tha»i hia»‡u A‘ia»‡n thaº¿, dA²ng A‘ia»‡n vA  cA´ng suaº¥t.' }
+        { label: 'Nguon va dien tro', note: 'Do lon dong dien thay doi theo I = U/R.' },
+        { label: 'Do thi dai luong', note: 'Theo doi hieu dien the, dong dien va cong suat theo thoi gian.' }
       ];
     case 'magneticHelix':
       return [
-        { label: 'Vaº­n ta»‘c ban A‘aº§u', note: 'ThA nh phaº§n song song B gia»¯ chuya»ƒn A‘a»™ng thaº³ng, thA nh phaº§n vuA´ng gA³c taº¡o quay trA²n.' },
-        { label: 'La»±c Lorentz', note: 'La»±c ta»« luA´n vuA´ng gA³c va»›i caº£ v vA  B nAªn khA´ng sinh cA´ng.' }
+        { label: 'Van toc ban dau', note: 'Thanh phan song song B giu chuyen dong thang, thanh phan vuong goc tao quay tron.' },
+        { label: 'Luc Lorentz', note: 'Luc tu luon vuong goc voi ca v va B nen khong sinh cong.' }
       ];
     case 'lensBench':
       return [
-        { label: 'Vaº­t vA  aº£nh', note: 'Va»‹ trA­ aº£nh thay A‘a»•i theo cA´ng tha»©c 1/f = 1/d + 1/dphaº©y.' },
-        { label: 'TiAªu ca»±', note: 'TiAªu ca»± quyaº¿t A‘a»‹nh khaº£ nAƒng ha»™i ta»¥ hay phA¢n kA¬ ca»§a ha»‡ quang ha»c.' }
+        { label: 'Vat va anh', note: 'Vi tri anh thay doi theo cong thuc 1/f = 1/d + 1/d phay.' },
+        { label: 'Tieu cu', note: 'Tieu cu quyet dinh kha nang hoi tu hay phan ki cua he quang hoc.' }
       ];
     case 'refractionTank':
       return [
-        { label: 'Maº·t phA¢n cA¡ch', note: 'Tia sA¡ng A‘a»•i hÆ°a»›ng khi A‘i qua hai mA´i trÆ°a»ng cA³ chiaº¿t suaº¥t khA¡c nhau.' },
-        { label: 'Aa»‹nh luaº­t Snell', note: 'n1 sin i = n2 sin r cho phA©p tA­nh gA³c khAºc xaº¡.' }
+        { label: 'Mat phan cach', note: 'Tia sang doi huong khi di qua hai moi truong co chiet suat khac nhau.' },
+        { label: 'Dinh luat Snell', note: 'n1 sin i = n2 sin r cho phep tinh goc khuc xa.' }
+      ];
+    case 'eyeOptics':
+      return [
+        { label: 'Thuy tinh the', note: 'Dieu tiet de anh roi dung tren vong mac.' },
+        { label: 'Vong mac', note: 'Noi anh can hien ro de mat quan sat tot.' }
       ];
     case 'thermalIsothermal':
       return [
-        { label: 'Nhia»‡t A‘a»™ khA´ng A‘a»•i', note: 'Trong sua»‘t quA¡ trA¬nh, T A‘Æ°a»£c gia»¯ ca»‘ A‘a»‹nh A‘a»ƒ quan sA¡t quan ha»‡ p-V.' },
-        { label: 'Ap suaº¥t vA  tha»ƒ tA­ch', note: 'Khi V tAƒng thA¬ p giaº£m theo quy luaº­t Boyle-Mariotte.' }
+        { label: 'Nhiet do khong doi', note: 'Trong suot qua trinh, T duoc giu co dinh de doi chieu quan he p-V.' },
+        { label: 'Ap suat va the tich', note: 'Khi V tang thi p giam theo quy luat Boyle-Mariotte.' }
       ];
     case 'thermalIsobaric':
       return [
-        { label: 'Ap suaº¥t khA´ng A‘a»•i', note: 'Ha»‡ A‘Æ°a»£c A‘ia»u khia»ƒn A‘a»ƒ gia»¯ p khA´ng A‘a»•i trong khi T biaº¿n thiAªn.' },
-        { label: 'Aa»™ na»Y nhia»‡t', note: 'Tha»ƒ tA­ch tAƒng khi nhia»‡t A‘a»™ tuya»‡t A‘a»‘i tAƒng.' }
+        { label: 'Ap suat khong doi', note: 'He duoc dieu khien de giu p khong doi trong khi T bien thien.' },
+        { label: 'Do no nhiet', note: 'The tich tang khi nhiet do tuyet doi tang.' }
       ];
     case 'thermalState':
       return [
-        { label: 'Traº¡ng thA¡i khA­', note: 'Ba A‘aº¡i lÆ°a»£ng p, V, T rA ng bua»™c nhau trong cA¹ng ma»™t ha»‡.' },
-        { label: 'Biaº¿n A‘a»•i thA´ng sa»‘', note: 'Thay A‘a»•i ma»™t A‘aº¡i lÆ°a»£ng saº½ lA m cA¡c A‘aº¡i lÆ°a»£ng cA²n laº¡i phaº£n a»©ng theo mA´ hA¬nh.' }
+        { label: 'Trang thai khi', note: 'Ba dai luong p, V, T rang buoc nhau trong cung mot he.' },
+        { label: 'Bien doi thong so', note: 'Thay doi mot dai luong se lam cac dai luong con lai thay doi.' }
+      ];
+    case 'nuclearCluster':
+      return [
+        { label: 'Proton va neutron', note: 'So proton quyet dinh so Z, con tong proton neutron cho so khoi A cua hat nhan.' },
+        { label: 'Do ben hat nhan', note: 'Ti le neutron proton va nang luong lien ket rieng anh huong den do ben cua hat nhan.' }
+      ];
+    case 'decayChamber':
+      return [
+        { label: 'Hat nhan me', note: 'Hat nhan khong ben co the phan ra ngau nhien theo xac suat vi mo.' },
+        { label: 'Buc xa va bo dem', note: 'Theo doi so hat phat ra, hang so phong xa va y nghia cua chu ki ban ra.' }
+      ];
+    case 'nuclearReaction':
+      return [
+        { label: 'Hat toi va hat dich', note: 'Phan ung xay ra khi hat toi tuong tac voi hat dich du nang luong hoac dieu kien thich hop.' },
+        { label: 'San pham va nang luong', note: 'Can doi bao toan so khoi, dien tich va nang luong truoc sau phan ung.' }
+      ];
+    case 'bindingWell':
+      return [
+        { label: 'Do hut khoi', note: 'Khoi luong hat nhan nho hon tong khoi luong cac nucleon tu do do co nang luong lien ket.' },
+        { label: 'Gieng the nang', note: 'Hat nam sau trong gieng the cang sau thi lien ket cang ben va kho tach roi.' }
       ];
     default:
       return [
-        { label: 'Vaº­t tha»ƒ chA­nh', note: 'ThA nh phaº§n trung tA¢m ca»§a mA´ pha»ng A‘Æ°a»£c theo dAµi baº±ng overlay vA  metric.' },
-        { label: 'Aaº¡i lÆ°a»£ng caº§n quan sA¡t', note: 'Taº­p trung vA o cA¡c vector, tham sa»‘ vA  timeline a»Y bAªn dÆ°a»›i canvas.' }
+        { label: 'Vat the chinh', note: 'Thanh phan trung tam cua mo phong duoc theo doi bang overlay va metric.' },
+        { label: 'Dai luong can quan sat', note: 'Tap trung vao cac vector, tham so va timeline o ben duoi canvas.' }
       ];
   }
 }
-
 function simulationMetrics(sceneKind: string, params: Record<string, number | string>, speed: number, camera: CameraState, running: boolean): SimMetric[] {
   const base: SimMetric[] = [
     { label: 'Trang thai', value: running ? 'Dang chay' : 'Tam dung', hint: 'Doi ngay khi ban pause/play mo phong.' },
@@ -812,7 +680,7 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
       return [
         { label: 'Khoang cach r', value: formatMetricValue(r, ' m'), hint: 'Luc Coulomb giam rat nhanh khi r tang.' },
         { label: 'Dau q1.q2', value: q1 * q2 >= 0 ? 'Cung dau' : 'Trai dau', hint: 'Cung dau day, trai dau hut.' },
-        { label: 'Ti le luc', value: formatMetricValue((q1 * q2) / (r * r)), hint: 'Gia tri ty le voi q1q2/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A², bo qua hang so k de doc xu huong.' },
+        { label: 'Ti le luc', value: formatMetricValue((q1 * q2) / (r * r)), hint: 'Gia tri ty le voi q1q2/rAÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’AÂ¢AÂ¢aâ‚¬sAÂ¬Aâ€¦AÂ¡AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ², bo qua hang so k de doc xu huong.' },
         ...base
       ];
     }
@@ -838,6 +706,49 @@ function simulationMetrics(sceneKind: string, params: Record<string, number | st
         ...base
       ];
     }
+    case 'nuclearCluster': {
+      const proton = Math.round(num(params.proton, 6));
+      const neutron = Math.round(num(params.neutron, 8));
+      const massNumber = proton + neutron;
+      const ratio = neutron / Math.max(proton, 1);
+      return [
+        { label: 'So proton Z', value: String(proton), hint: 'Z quyet dinh dien tich hat nhan va nguyen to hoa hoc.' },
+        { label: 'So khoi A', value: String(massNumber), hint: 'A = Z + N voi N la so neutron.' },
+        { label: 'Ti le N/Z', value: formatMetricValue(ratio), hint: 'Ti le neutron proton anh huong den do ben cua hat nhan.' },
+        ...base
+      ];
+    }
+    case 'decayChamber': {
+      const lambda = Math.max(num(params.lambda, 0.35), 0.01);
+      const n0 = Math.max(num(params.N0, 100), 1);
+      const halfLife = Math.log(2) / lambda;
+      return [
+        { label: 'Hang so phong xa Î»', value: formatMetricValue(lambda, ' 1/s'), hint: 'Î» cang lon thi xac suat phan ra trong mot don vi thoi gian cang cao.' },
+        { label: 'So hat ban dau N0', value: String(Math.round(n0)), hint: 'So hat nhan chua phan ra tai thoi diem bat dau.' },
+        { label: 'Chu ki ban ra', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / Î».' },
+        ...base
+      ];
+    }
+    case 'nuclearReaction': {
+      const energy = Math.max(num(params.energy, 200), 0);
+      const massDefect = Math.max(num(params.massDefect, 0.2), 0);
+      return [
+        { label: 'Nang luong Q', value: formatMetricValue(energy, ' MeV'), hint: 'Do lon nang luong trao doi trong phan ung hat nhan.' },
+        { label: 'Do hut khoi Î”m', value: formatMetricValue(massDefect, ' u'), hint: 'Î”m lien he truc tiep voi nang luong qua E = Î”m.c^2.' },
+        { label: 'Can doi bao toan', value: 'A, Z', hint: 'Can bao toan so khoi A va dien tich Z truoc sau phan ung.' },
+        ...base
+      ];
+    }
+    case 'bindingWell': {
+      const massDefect = Math.max(num(params.massDefect, 0.2), 0);
+      const binding = Math.max(num(params.binding, 8), 0);
+      return [
+        { label: 'Do hut khoi Î”m', value: formatMetricValue(massDefect, ' u'), hint: 'Do hut khoi cho thay mot phan khoi luong da chuyen thanh nang luong lien ket.' },
+        { label: 'Lien ket rieng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Gia tri nay cang lon thi hat nhan thuong cang ben.' },
+        { label: 'Do sau gieng the', value: formatMetricValue(binding / Math.max(massDefect, 0.01)), hint: 'Chi bao hinh dung do ben cua trang thai lien ket.' },
+        ...base
+      ];
+    }
     default:
       return base;
   }
@@ -858,6 +769,11 @@ function interactionTips(sceneKind: string): string[] {
     case 'refractionTank':
     case 'eyeOptics':
       return [...shared, 'Goc Mat phang quang hoc giup theo doi tia toi, phap tuyen va diem hoi tu chinh xac hon.'];
+    case 'nuclearCluster':
+    case 'decayChamber':
+    case 'nuclearReaction':
+    case 'bindingWell':
+      return [...shared, 'Goc Focus giup nhin ro hat trung tam, san pham phan ra va cac metric nang luong o HUD.'];
     default:
       return shared;
   }
@@ -949,12 +865,33 @@ function parameterControlsFor(sceneKind: string): ParamControl[] {
     case 'ohmCircuit':
       return [
         { key: 'u', label: 'Dien ap', min: 1, max: 24, step: 0.5, unit: 'V' },
-        { key: 'r', label: 'Dien tro', min: 1, max: 20, step: 0.5, unit: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A©' }
+        { key: 'r', label: 'Dien tro', min: 1, max: 20, step: 0.5, unit: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ©' }
       ];
     case 'lensBench':
       return [
         { key: 'f', label: 'Tieu cu', min: 4, max: 24, step: 0.5, unit: 'cm' },
         { key: 'doVat', label: 'Khoang vat', min: 5, max: 50, step: 0.5, unit: 'cm' }
+      ];
+    case 'nuclearCluster':
+      return [
+        { key: 'proton', label: 'Proton', min: 1, max: 30, step: 1, unit: '' },
+        { key: 'neutron', label: 'Neutron', min: 1, max: 40, step: 1, unit: '' }
+      ];
+    case 'decayChamber':
+      return [
+        { key: 'lambda', label: 'Lambda', min: 0.05, max: 1.2, step: 0.01, unit: '1/s' },
+        { key: 'N0', label: 'So hat ban dau', min: 20, max: 300, step: 5, unit: '' },
+        { key: 'emission', label: 'Cuong do phat', min: 1, max: 12, step: 1, unit: '' }
+      ];
+    case 'nuclearReaction':
+      return [
+        { key: 'energy', label: 'Nang luong', min: 20, max: 500, step: 5, unit: 'MeV' },
+        { key: 'massDefect', label: 'Do hut khoi', min: 0.01, max: 0.5, step: 0.01, unit: 'u' }
+      ];
+    case 'bindingWell':
+      return [
+        { key: 'massDefect', label: 'Do hut khoi', min: 0.01, max: 0.5, step: 0.01, unit: 'u' },
+        { key: 'binding', label: 'Lien ket rieng', min: 1, max: 12, step: 0.1, unit: 'MeV/nuclon' }
       ];
     default:
       return [];
@@ -980,6 +917,10 @@ function simulationDuration(sceneKind: string, params: Record<string, number | s
     case 'travelingWave':
     case 'interferenceField':
     case 'standingWave':
+    case 'nuclearCluster':
+    case 'decayChamber':
+    case 'nuclearReaction':
+    case 'bindingWell':
       return 12;
     default:
       return 10;
@@ -1079,7 +1020,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
       { label: 'a_ht', value: formatMetricValue(aHt, ' m/s^2'), color: '#f97316' }
         ],
         overlays: [
-          { key: 'rotor', label: 'Vat quay', value: `AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸ = ${formatMetricValue(angle, ' rad')}`, x: 50 + Math.cos(angle) * 20, y: 50 + Math.sin(angle) * 20, color: '#2563eb' },
+          { key: 'rotor', label: 'Vat quay', value: `AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ¸ = ${formatMetricValue(angle, ' rad')}`, x: 50 + Math.cos(angle) * 20, y: 50 + Math.sin(angle) * 20, color: '#2563eb' },
           { key: 'radius', label: 'r', value: formatMetricValue(r, ' m'), x: 50, y: 24, color: '#0f172a' }
         ]
       };
@@ -1129,7 +1070,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         ],
         vectors: [{ label: 'v', value: formatMetricValue(linearV, ' m/s'), color: '#2563eb' }],
         overlays: [
-          { key: 'bob', label: 'Qua nang', value: `AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A¸ = ${formatMetricValue(theta * 180 / Math.PI, 'AƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A°')}`, x: 50 + Math.sin(theta) * 24, y: 42 + (1 - Math.cos(theta)) * 28, color: '#2563eb' },
+          { key: 'bob', label: 'Qua nang', value: `AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ¸ = ${formatMetricValue(theta * 180 / Math.PI, 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’AÂ¢AÂ¢aâ‚¬sAÂ¬Aâ€¦AÂ¡AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ°')}`, x: 50 + Math.sin(theta) * 24, y: 42 + (1 - Math.cos(theta)) * 28, color: '#2563eb' },
           { key: 'period', label: 'T', value: formatMetricValue((2 * Math.PI) / omega, ' s'), x: 14, y: 24, color: '#0f172a' }
         ]
       };
@@ -1152,7 +1093,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         vectors: [{ label: 'v_song', value: formatMetricValue(waveSpeed, ' m/s'), color: '#2563eb' }],
         overlays: [
           { key: 'source', label: 'Nguon song', value: `A = ${formatMetricValue(amplitude, ' cm')}`, x: 16, y: 52, color: '#2563eb' },
-          { key: 'lambda', label: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»', value: formatMetricValue(lambda, ' m'), x: 48, y: 24, color: '#0f172a' },
+          { key: 'lambda', label: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ»', value: formatMetricValue(lambda, ' m'), x: 48, y: 24, color: '#0f172a' },
           { key: 'speed', label: 'v', value: formatMetricValue(waveSpeed, ' m/s'), x: 80, y: 60, color: '#f97316' }
         ]
       };
@@ -1168,14 +1109,14 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         metrics: [
           { label: 'Khoang hai nguon', value: formatMetricValue(d, ' m'), hint: 'd chi phoi khoang van va mien giao thoa.' },
           { label: 'Hieu duong di', value: formatMetricValue(pathDiff, ' m'), hint: 'Dung de so sanh dieu kien cuc dai/cuc tieu giao thoa.' },
-          { label: 'Dieu kien cuc dai', value: `AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Ad = k.${formatMetricValue(lambda, ' m')}`, hint: 'Hai song den cung pha tao cuc dai giao thoa.' },
+          { label: 'Dieu kien cuc dai', value: `AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™Aâ€šAÂ¢AÆ’AÂ¢AÂ¢aâ€šÂ¬AÂ¡Aâ€šAÂ¬AÆ’aâ‚¬sAâ€šAÂd = k.${formatMetricValue(lambda, ' m')}`, hint: 'Hai song den cung pha tao cuc dai giao thoa.' },
           ...baseMetrics
         ],
-        vectors: [{ label: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Ad', value: formatMetricValue(pathDiff, ' m'), color: '#2563eb' }],
+        vectors: [{ label: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™Aâ€šAÂ¢AÆ’AÂ¢AÂ¢aâ€šÂ¬AÂ¡Aâ€šAÂ¬AÆ’aâ‚¬sAâ€šAÂd', value: formatMetricValue(pathDiff, ' m'), color: '#2563eb' }],
         overlays: [
           { key: 's1', label: 'S1', value: `A = ${formatMetricValue(amplitude, ' cm')}`, x: 28, y: 48, color: '#2563eb' },
           { key: 's2', label: 'S2', value: `A = ${formatMetricValue(amplitude, ' cm')}`, x: 72, y: 48, color: '#2563eb' },
-          { key: 'delta', label: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A‚A¢AƒA¢A¢a‚¬A¡A‚A¬Aƒa€sA‚Ad', value: formatMetricValue(pathDiff, ' m'), x: 50, y: 20, color: '#f97316' }
+          { key: 'delta', label: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™Aâ€šAÂ¢AÆ’AÂ¢AÂ¢aâ€šÂ¬AÂ¡Aâ€šAÂ¬AÆ’aâ‚¬sAâ€šAÂd', value: formatMetricValue(pathDiff, ' m'), x: 50, y: 20, color: '#f97316' }
         ]
       };
     }
@@ -1192,11 +1133,11 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
           { label: 'Bien do cuc dai', value: formatMetricValue(amplitude, ' cm'), hint: 'Bung song dat bien do dao dong lon nhat.' },
           ...baseMetrics
         ],
-        vectors: [{ label: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»/2', value: formatMetricValue(nodeSpacing, ' m'), color: '#2563eb' }],
+        vectors: [{ label: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ»/2', value: formatMetricValue(nodeSpacing, ' m'), color: '#2563eb' }],
         overlays: [
           { key: 'node', label: 'Nut', value: formatMetricValue(nodeSpacing, ' m'), x: 26, y: 55, color: '#0f172a' },
           { key: 'antinode', label: 'Bung', value: formatMetricValue(amplitude, ' cm'), x: 50, y: 38, color: '#2563eb' },
-          { key: 'lambda', label: 'AƒÆ’A†a€™Aƒa€¦A‚A½AƒÆ’A¢a‚¬A¡Aƒa€sA‚A»', value: formatMetricValue(lambda, ' m'), x: 76, y: 20, color: '#f97316' }
+          { key: 'lambda', label: 'AÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’aâ‚¬Â¦Aâ€šAÂ½AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ»', value: formatMetricValue(lambda, ' m'), x: 76, y: 20, color: '#f97316' }
         ]
       };
     }
@@ -1230,9 +1171,9 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         time: t,
         duration,
         metrics: [
-          { label: 'Khoang cach r', value: formatMetricValue(r, ' m'), hint: 'Luc dien giam theo quy luat 1/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A².' },
+          { label: 'Khoang cach r', value: formatMetricValue(r, ' m'), hint: 'Luc dien giam theo quy luat 1/rAÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’AÂ¢AÂ¢aâ‚¬sAÂ¬Aâ€¦AÂ¡AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ².' },
           { label: 'Xu huong', value: q1 * q2 >= 0 ? 'Day nhau' : 'Hut nhau', hint: 'Cung dau day nhau, trai dau hut nhau.' },
-          { label: 'Ty le luc', value: formatMetricValue(forceRatio), hint: 'Gia tri ty le voi q1.q2/rAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A², dung de so sanh xu huong.' },
+          { label: 'Ty le luc', value: formatMetricValue(forceRatio), hint: 'Gia tri ty le voi q1.q2/rAÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’AÂ¢AÂ¢aâ‚¬sAÂ¬Aâ€¦AÂ¡AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ², dung de so sanh xu huong.' },
           ...baseMetrics
         ],
         vectors: [{ label: 'F', value: formatMetricValue(forceRatio), color: '#f97316' }],
@@ -1253,7 +1194,7 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
         duration,
         metrics: [
           { label: 'Dong dien I', value: formatMetricValue(i, ' A'), hint: 'Theo dinh luat Ohm: I = U/R.' },
-          { label: 'Cong suat P', value: formatMetricValue(p, ' W'), hint: 'P = U.I = IAƒÆ’A†a€™AƒA¢A¢a€sA¬A…A¡AƒÆ’A¢a‚¬A¡Aƒa€sA‚A².R.' },
+          { label: 'Cong suat P', value: formatMetricValue(p, ' W'), hint: 'P = U.I = IAÆ’Ã†â€™Aâ€ aâ‚¬â„¢AÆ’AÂ¢AÂ¢aâ‚¬sAÂ¬Aâ€¦AÂ¡AÆ’Ã†â€™AÂ¢aâ€šÂ¬AÂ¡AÆ’aâ‚¬sAâ€šAÂ².R.' },
           { label: 'Hieu dien the U', value: formatMetricValue(u, ' V'), hint: 'Nguon cap dien cho toan mach.' },
           ...baseMetrics
         ],
@@ -1283,6 +1224,85 @@ function simulationStateFor(sceneKind: string, params: Record<string, number | s
           { key: 'object', label: 'Vat', value: `d = ${formatMetricValue(d, ' cm')}`, x: 24, y: 60, color: '#0f172a' },
           { key: 'lens', label: 'Thau kinh', value: `f = ${formatMetricValue(f, ' cm')}`, x: 50, y: 26, color: '#2563eb' },
           { key: 'image', label: 'Anh', value: Number.isFinite(imageDistance) ? `d' = ${formatMetricValue(imageDistance, ' cm')}` : 'Anh o vo cuc', x: 74, y: 52, color: '#f97316' }
+        ]
+      };
+    }
+    case 'nuclearCluster': {
+      const proton = Math.round(num(params.proton, 6));
+      const neutron = Math.round(num(params.neutron, 8));
+      const massNumber = proton + neutron;
+      return {
+        time: t,
+        duration,
+        metrics: [
+          { label: 'So proton Z', value: String(proton), hint: 'Dien tich hat nhan bang +Ze.' },
+          { label: 'So neutron N', value: String(neutron), hint: 'N cung voi Z quyet dinh do ben cua hat nhan.' },
+          { label: 'So khoi A', value: String(massNumber), hint: 'A = Z + N.' },
+          ...baseMetrics
+        ],
+        vectors: [{ label: 'N/Z', value: formatMetricValue(neutron / Math.max(proton, 1)), color: '#f97316' }],
+        overlays: [
+          { key: 'nucleus', label: 'Hat nhan', value: `A = ${massNumber}, Z = ${proton}`, x: 50, y: 50, color: '#2563eb' }
+        ]
+      };
+    }
+    case 'decayChamber': {
+      const lambda = Math.max(num(params.lambda, 0.35), 0.01);
+      const n0 = Math.max(num(params.N0, 100), 1);
+      const remaining = n0 * Math.exp(-lambda * t);
+      const emitted = Math.max(n0 - remaining, 0);
+      const halfLife = Math.log(2) / lambda;
+      return {
+        time: t,
+        duration,
+        metrics: [
+          { label: 'So hat con lai', value: formatMetricValue(remaining), hint: 'N = N0.e^(-lambda.t).' },
+          { label: 'So hat da phan ra', value: formatMetricValue(emitted), hint: 'Bang N0 - N tai thoi diem dang xet.' },
+          { label: 'Chu ki ban ra', value: formatMetricValue(halfLife, ' s'), hint: 'T1/2 = ln2 / lambda.' },
+          ...baseMetrics
+        ],
+        vectors: [{ label: 'Î»', value: formatMetricValue(lambda, ' 1/s'), color: '#f97316' }],
+        overlays: [
+          { key: 'parent', label: 'Hat nhan me', value: `N = ${formatMetricValue(remaining)}`, x: 42, y: 54, color: '#2563eb' },
+          { key: 'detector', label: 'Bo dem', value: `Da phat = ${formatMetricValue(emitted)}`, x: 78, y: 34, color: '#0f172a' }
+        ]
+      };
+    }
+    case 'nuclearReaction': {
+      const energy = Math.max(num(params.energy, 200), 0);
+      const massDefect = Math.max(num(params.massDefect, 0.2), 0);
+      const released = energy * (0.4 + 0.6 * Math.min(t / Math.max(duration, 0.1), 1));
+      return {
+        time: t,
+        duration,
+        metrics: [
+          { label: 'Nang luong trao doi', value: formatMetricValue(released, ' MeV'), hint: 'Mo ta xu huong Q tang khi phan ung tien trien.' },
+          { label: 'Do hut khoi', value: formatMetricValue(massDefect, ' u'), hint: 'Lien he nang luong theo E = Î”m.c^2.' },
+          { label: 'Bao toan', value: 'A, Z', hint: 'Can doi so khoi va dien tich hai ve phuong trinh phan ung.' },
+          ...baseMetrics
+        ],
+        vectors: [{ label: 'Q', value: formatMetricValue(energy, ' MeV'), color: '#22c55e' }],
+        overlays: [
+          { key: 'incoming', label: 'Hat toi', value: 'Tien vao va cham', x: 24 + Math.min((t / Math.max(duration, 0.1)) * 36, 36), y: 52, color: '#f97316' },
+          { key: 'products', label: 'San pham', value: `Q = ${formatMetricValue(released, ' MeV')}`, x: 72, y: 42, color: '#2563eb' }
+        ]
+      };
+    }
+    case 'bindingWell': {
+      const massDefect = Math.max(num(params.massDefect, 0.2), 0);
+      const binding = Math.max(num(params.binding, 8), 0);
+      return {
+        time: t,
+        duration,
+        metrics: [
+          { label: 'Do hut khoi', value: formatMetricValue(massDefect, ' u'), hint: 'Cho thay phan khoi luong da chuyen thanh nang luong lien ket.' },
+          { label: 'Lien ket rieng', value: formatMetricValue(binding, ' MeV/nuclon'), hint: 'Gia tri lon thuong ung voi hat nhan ben hon.' },
+          { label: 'Do sau gieng', value: formatMetricValue(binding * 0.8, ' arb'), hint: 'Chi bao dinh tinh muc do hut cua trang thai lien ket.' },
+          ...baseMetrics
+        ],
+        vectors: [{ label: 'E_lk', value: formatMetricValue(binding, ' MeV/nuclon'), color: '#a855f7' }],
+        overlays: [
+          { key: 'well', label: 'Gieng the', value: `Î”m = ${formatMetricValue(massDefect, ' u')}`, x: 50, y: 60, color: '#2563eb' }
         ]
       };
     }
