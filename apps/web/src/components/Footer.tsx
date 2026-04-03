@@ -1,11 +1,14 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
+import { webAppConfig } from '../config/webAppConfig';
 
 export function Footer() {
   return (
     <footer className="kntech-footer kntech-footer-compact">
       <div className="footer-main">
-        <div className="footer-brand">KNTech Physics Lab</div>
-        <div className="footer-meta">Hỗ trợ: <a href="mailto:support@kntech.vn">support@kntech.vn</a> · Dành cho trường, trung tâm và đội ngũ học thuật cần vận hành nội dung sâu.</div>
+        <div className="footer-brand">{webAppConfig.systemName}</div>
+        <div className="footer-meta">
+          Hỗ trợ: <a href={`mailto:${webAppConfig.supportEmail}`}>{webAppConfig.supportEmail}</a> · {webAppConfig.supportBlurb}
+        </div>
       </div>
       <div className="footer-links">
         <Link to="/dieu-khoan">Điều khoản sử dụng</Link>

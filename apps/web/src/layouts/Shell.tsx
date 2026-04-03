@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { BookOpen, Brain, Home, PlusCircle, Shield, Database, LogOut, Sparkles, ChevronDown, FileText, Copyright, MessagesSquare } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { Footer } from '../components/Footer';
+import { appTitle, webAppConfig } from '../config/webAppConfig';
 
 export function Shell() {
   const navigate = useNavigate();
@@ -11,11 +12,11 @@ export function Shell() {
   const [showLegal, setShowLegal] = useState(false);
   const isCms = user?.vaiTro === 'CMS_ROOT';
   const links = [
-    { to: '/', label: 'KNTech Dashboard', icon: Home, show: true },
+    { to: '/', label: `${webAppConfig.brandName} Dashboard`, icon: Home, show: true },
     { to: '/chuong-trinh', label: 'Chủ đề mô phỏng', icon: BookOpen, show: true },
-    { to: '/hoi-ai', label: 'KNTech AI', icon: Brain, show: true },
-    { to: '/chat', label: 'Chat 1-1', icon: MessagesSquare, show: true },
-    { to: '/tao-de', label: 'Tạo đề', icon: PlusCircle, show: user?.vaiTro !== 'HOC_SINH' },
+    { to: '/hoi-ai', label: `${webAppConfig.brandName} AI`, icon: Brain, show: webAppConfig.features.aiConsole },
+    { to: '/chat', label: 'Chat 1-1', icon: MessagesSquare, show: webAppConfig.features.chat },
+    { to: '/tao-de', label: 'Tạo đề', icon: PlusCircle, show: webAppConfig.features.examBuilder && user?.vaiTro !== 'HOC_SINH' },
     { to: '/quan-tri', label: 'Admin vận hành', icon: Shield, show: user?.vaiTro === 'QUAN_TRI_VIEN' || user?.vaiTro === 'CMS_ROOT' },
     { to: '/cms', label: 'CMS Root', icon: Database, show: isCms }
   ];
@@ -24,9 +25,9 @@ export function Shell() {
     <div className="shell">
       <aside className={isCms ? 'sidebar cms-sidebar' : 'sidebar admin-sidebar'}>
         <div className="sidebar-brand-card">
-          <div className="brand-kicker"><Sparkles size={16} /> KNTech</div>
-          <div className="brand">Physics Lab</div>
-          <div className="muted">{isCms ? 'Điều phối nội dung, mô phỏng và AI cho Physics Lab.' : 'Admin vận hành học vụ, người dùng và theo dõi dữ liệu học tập.'}</div>
+          <div className="brand-kicker"><Sparkles size={16} /> {webAppConfig.brandName}</div>
+          <div className="brand">{webAppConfig.productName}</div>
+          <div className="muted">{isCms ? `Điều phối nội dung, mô phỏng và AI cho ${webAppConfig.productName}.` : `Admin vận hành học vụ, người dùng và theo dõi dữ liệu học tập của ${webAppConfig.productName}.`}</div>
         </div>
         <nav className="nav-list">
           {links.filter((l) => l.show).map(({ to, label, icon: Icon }) => (
@@ -48,14 +49,14 @@ export function Shell() {
         </nav>
         <div className={isCms ? 'profile-card profile-card-cms' : 'profile-card profile-card-admin'}>
           <div className="profile-head">
-            <Avatar name={user?.tenHienThi || user?.email || 'KNTech'} size={56} />
+            <Avatar name={user?.tenHienThi || user?.email || webAppConfig.brandName} size={56} />
             <div>
-              <div className="profile-name">{user?.tenHienThi || 'Người dùng KNTech'}</div>
+              <div className="profile-name">{user?.tenHienThi || appTitle('Người dùng', webAppConfig.brandName)}</div>
               <div className="muted">{user?.email}</div>
             </div>
           </div>
           <div className="badge-row">
-            <span className="badge">{isCms ? 'KNTech CMS Root' : 'KNTech Admin'}</span>
+            <span className="badge">{isCms ? appTitle(webAppConfig.brandName, 'CMS Root') : appTitle(webAppConfig.brandName, 'Admin')}</span>
             <span className="badge badge-soft">{user?.vaiTro}</span>
           </div>
           <button className="button button-secondary full" onClick={() => { logout(); navigate('/dang-nhap'); }}><LogOut size={16} /> Đăng xuất</button>

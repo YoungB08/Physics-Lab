@@ -69,7 +69,7 @@ function inferSimulationType(data: any) {
 }
 
 function topicLabel(data: any) {
-  return cleanText(data?.chuDeThi, 'Chu de tong hop');
+  return cleanText(data?.chuDeThi, 'Chủ đề tổng hợp');
 }
 
 function responseText(response: any) {
@@ -78,18 +78,34 @@ function responseText(response: any) {
   return String(response?.du_lieu?.giai_thich || response?.du_lieu?.tom_tat || '');
 }
 
+function formatChatTime(value?: string) {
+  if (!value) return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function toLessonChatMessages(detail: any) {
+  const messages = Array.isArray(detail?.messages) ? detail.messages : [];
+  return messages.map((item: any) => ({
+    role: item?.vaiTro === 'user' ? 'user' as const : 'assistant' as const,
+    text: cleanText(item?.noiDung, ''),
+    at: formatChatTime(item?.createdAt)
+  })).filter((item: { text: string }) => item.text);
+}
+
 function normalizeSectionTitle(title = '') {
-  const fixedTitle = cleanText(title, 'Tong quan');
+  const fixedTitle = cleanText(title, 'Tổng quan');
   const raw = normalizeVietnamese(fixedTitle);
-  if (raw.includes('khai niem')) return 'Khai niem';
-  if (raw.includes('cong thuc') && raw.includes('bien')) return 'Bien doi cong thuc';
-  if (raw.includes('cong thuc')) return 'Cong thuc';
-  if (raw.includes('don vi')) return 'Don vi';
-  if (raw.includes('vi du')) return 'Vi du';
-  if (raw.includes('bai tap')) return 'Bai tap';
-  if (raw.includes('chien luoc')) return 'Chien luoc';
-  if (raw.includes('sai lam')) return 'Sai lam thuong gap';
-  if (raw.includes('phan tich')) return 'Phan tich chuyen sau';
+  if (raw.includes('khai niem')) return 'Khái niệm';
+  if (raw.includes('cong thuc') && raw.includes('bien')) return 'Biến đổi công thức';
+  if (raw.includes('cong thuc')) return 'Công thức';
+  if (raw.includes('don vi')) return 'Đơn vị';
+  if (raw.includes('vi du')) return 'Ví dụ';
+  if (raw.includes('bai tap')) return 'Bài tập';
+  if (raw.includes('chien luoc')) return 'Chiến lược';
+  if (raw.includes('sai lam')) return 'Sai lầm thường gặp';
+  if (raw.includes('phan tich')) return 'Phân tích chuyên sâu';
   return fixedTitle;
 }
 
@@ -106,7 +122,7 @@ function groupSections(sections: any[]) {
 function externalResources(config: any = {}) {
   const items = Array.isArray(config?.externalResources) ? config.externalResources : [];
   return items.filter((item: any) => item?.url).map((item: any) => ({
-    title: String(item.title || item.label || 'Tai nguyen ngoai'),
+    title: String(item.title || item.label || 'Tài nguyên ngoài'),
     url: String(item.url),
     type: String(item.type || 'link'),
     provider: String(item.provider || 'external')
@@ -121,17 +137,31 @@ export function BaiHocPage() {
   const [aiSimResponse, setAiSimResponse] = useState<any>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; text: string; at: string }>>([]);
+  const [chatConversationId, setChatConversationId] = useState('');
   const [error, setError] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
 
   useEffect(() => {
-    api.getBaiHoc(slug).then((payload) => {
+    api.getBaiHoc(slug).then(async (payload) => {
       setData(payload);
-      setChatHistory([{
-        role: 'assistant',
-        text: `Chao ban, minh la **Nova KNTech**. Hien tai minh dang ho tro bai **${payload.ten}**. Ban co the hoi ve khai niem, cong thuc, cach giai nhanh, bai tap van dung hoac cach doc mo phong.`,
+      const fallbackGreeting = [{
+        role: 'assistant' as const,
+        text: `Chào bạn, mình là **Nova KNTech**. Hiện tại mình đang hỗ trợ bài **${payload.ten}**. Bạn có thể hỏi về khái niệm, công thức, cách giải nhanh, bài tập vận dụng hoặc cách đọc mô phỏng.`,
         at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-      }]);
+      }];
+      try {
+        const conversations = await api.chatConversations(payload.slug);
+        const latest = Array.isArray(conversations) && conversations.length ? conversations[0] : null;
+        if (latest?.id) {
+          const detail = await api.chatConversationDetail(latest.id);
+          const history = toLessonChatMessages(detail);
+          setChatConversationId(latest.id);
+          setChatHistory(history.length ? history : fallbackGreeting);
+          return;
+        }
+      } catch {}
+      setChatConversationId('');
+      setChatHistory(fallbackGreeting);
     }).catch((e) => setError(e.message));
   }, [slug]);
 
@@ -141,7 +171,7 @@ export function BaiHocPage() {
       const result = await api.hoiAI({
         loaiTacVu: 'giai_thich_ly_thuyet',
         provider: 'auto',
-        noiDung: `Giai thich sau, dung ban chat vat ly, bam chuan THPT cho phan ${partTitle} cua bai ${data.ten}. Trinh bay bang markdown, co cong thuc neu can va nhan manh cac sai lam thuong gap.`,
+        noiDung: `Giải thích sau, dùng bản chất vật lý, bám chuẩn THPT cho phần ${partTitle} của bài ${data.ten}. Trình bày bằng markdown, có công thức nếu cần và nhấn mạnh các sai lầm thường gặp.`,
         boCanh: { lesson: data.ten, topic: topicLabel(data) }
       });
       setAiResponse(result);
@@ -160,17 +190,19 @@ export function BaiHocPage() {
     setChatInput('');
     try {
       setLoadingAI(true);
-      const result = await api.hoiAI({
-        loaiTacVu: 'giai_bai',
-        provider: 'auto',
-        noiDung: `Theo ngu canh bai ${data.ten}: ${text}. Tra loi bang markdown, co cong thuc, buoc bien doi va nhac loi sai neu phu hop.`,
-        boCanh: { lesson: data.ten, topic: topicLabel(data), lessonSlug: data.slug }
-      });
-      const safeAnswer = cleanText(responseText(result), 'KNTech AI chua tra ve noi dung hop le.');
-      setAiResponse(result);
-      setChatHistory((prev) => [...prev, { role: 'assistant', text: safeAnswer, at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }]);
+      let conversationId = chatConversationId;
+      if (!conversationId) {
+        const created = await api.createChatConversation({ lessonSlug: data.slug, firstMessage: text });
+        conversationId = String(created?.id || '');
+        setChatConversationId(conversationId);
+      }
+      await api.sendChatMessage(conversationId, { noiDung: text, provider: 'auto' });
+      const detail = await api.chatConversationDetail(conversationId);
+      const history = toLessonChatMessages(detail);
+      setChatHistory(history);
     } catch (e: any) {
       setError(e.message);
+      setChatHistory((prev) => prev.filter((item, index) => !(index === prev.length - 1 && item.role === 'user' && item.text === text && item.at === now)));
     } finally {
       setLoadingAI(false);
     }
@@ -180,7 +212,7 @@ export function BaiHocPage() {
   const sectionGroups = useMemo(() => groupSections(enrichedSections), [enrichedSections]);
 
   if (error) return <div className="card error-box">{error}</div>;
-  if (!data) return <div className="card">KNTech dang tai bai hoc...</div>;
+  if (!data) return <div className="card">KNTech đang tải bài học...</div>;
 
   const inferredType = inferSimulationType(data);
   const configuredType = data.moPhong?.loaiMoPhong;
@@ -200,7 +232,7 @@ export function BaiHocPage() {
     ...baseSimulationConfig,
     sceneVariant: baseSimulationConfig.sceneVariant || data.slug,
     variantKey: baseSimulationConfig.variantKey || `${data.slug}:${simulationType}:${data.ten}`,
-    strategyTitle: 'Chien luoc quan sat'
+    strategyTitle: 'Chiến lược quan sát'
   };
   const simulationConfigWithLesson = {
     ...simulationConfig,
@@ -214,9 +246,9 @@ export function BaiHocPage() {
   const simulationParams = data.moPhong?.thamSoJson || preset?.defaultParams || { quality: 'ultra', precision: 'exam-mode', topic: topicLabel(data) };
   const theoryGroups = Object.entries(sectionGroups);
   const resources = externalResources(simulationConfigWithLesson);
-  const lessonDescription = cleanText(data.moTa, `${data.ten} duoc trinh bay theo ly thuyet, cong thuc trong tam va mo phong tuong ung.`);
-  const lessonLabel = cleanText(data.chuong?.ten, 'Chu de vat ly');
-  const simulationLabel = cleanText(preset?.label || simulationType, 'Mo phong vat ly');
+  const lessonDescription = cleanText(data.moTa, `${data.ten} được trình bày theo lý thuyết, công thức trọng tâm và mô phỏng tương ứng.`);
+  const lessonLabel = cleanText(data.chuong?.ten, 'Chủ đề vật lý');
+  const simulationLabel = cleanText(preset?.label || simulationType, 'Mô phỏng vật lý');
 
   async function explainSimulation() {
     try {
@@ -224,7 +256,7 @@ export function BaiHocPage() {
       const result = await api.hoiAI({
         loaiTacVu: 'giai_thich_mo_phong',
         provider: 'auto',
-        noiDung: `Giai thich mo phong cua bai ${data.ten}: muc tieu quan sat, cach thay tham so, du doan xu huong, lien he cong thuc va cac bay sai. Trinh bay markdown ro rang, uu tien checklist va cau hoi goi mo.`,
+        noiDung: `Giải thích mô phỏng của bài ${data.ten}: mục tiêu quan sát, cách thay tham số, dự đoán xu hướng, liên hệ công thức và các bẫy sai. Trình bày markdown rõ ràng, ưu tiên checklist và câu hỏi gợi mở.`,
         boCanh: {
           lesson: data.ten,
           topic: topicLabel(data),
@@ -249,75 +281,75 @@ export function BaiHocPage() {
         <h1 className="page-title">{data.ten}</h1>
         <p>{lessonDescription}</p>
         <div className="lesson-hero-stats">
-          <div className="mini-stat"><strong>Coverage</strong><span>{theoryGroups.length} khoi kien thuc sau</span></div>
+          <div className="mini-stat"><strong>Coverage</strong><span>{theoryGroups.length} khối kiến thức sâu</span></div>
           <div className="mini-stat"><strong>Simulation</strong><span>{data.coMoPhong ? 'Three.js full 3D' : 'Theory mode'}</span></div>
-          <div className="mini-stat"><strong>Resources</strong><span>{resources.length || 0} nguon ngoai</span></div>
+          <div className="mini-stat"><strong>Resources</strong><span>{resources.length || 0} nguồn ngoài</span></div>
         </div>
         <div className="badge-row">
-          <span className="badge badge-variant-0">Tag lop {data.chuong.lop}</span>
+          <span className="badge badge-variant-0">Lớp {data.chuong.lop}</span>
           <span className="badge badge-variant-1">{lessonLabel}</span>
           <span className="badge badge-variant-2">{topicLabel(data)}</span>
-          <span className="badge badge-variant-3">{data.coMoPhong ? simulationLabel : 'Ly thuyet'}</span>
+          <span className="badge badge-variant-3">{data.coMoPhong ? simulationLabel : 'Lý thuyết'}</span>
           {simulationConfigWithLesson.sceneVariant ? <span className="badge badge-soft">Variant {String(simulationConfigWithLesson.sceneVariant)}</span> : null}
-          <span className="badge badge-soft">{visualProfile.mode === 'image' ? 'Anh minh hoa AI/so do' : 'Mo phong rieng theo bai'}</span>
+          <span className="badge badge-soft">{visualProfile.mode === 'image' ? 'Ảnh minh họa AI/sơ đồ' : 'Mô phỏng riêng theo bài'}</span>
         </div>
       </div>
       <div className="grid-2 lesson-layout">
         <div className="card stack">
-          <div className="row-between wrap-mobile"><h3>Bai giang phu sau</h3><span className="badge badge-variant-1">KNTech Theory Notes+</span></div>
+          <div className="row-between wrap-mobile"><h3>Bài giảng phụ sâu</h3><span className="badge badge-variant-1">KNTech Theory Notes+</span></div>
           {theoryGroups.map(([title, contents]) => (
             <div key={title} className="knowledge-item">
               <div className="row-between wrap-mobile">
                 <div className="knowledge-title">{title}</div>
-                <span className="badge badge-soft">{contents.length} block</span>
+                <span className="badge badge-soft">{contents.length} khối</span>
               </div>
               <MarkdownMath content={contents.join('\n\n---\n\n')} />
               <button className="button button-secondary" onClick={() => explain(title)} disabled={loadingAI}>
-                {loadingAI ? 'KNTech dang goi AI...' : `KNTech AI giai thich phan ${title}`}
+                {loadingAI ? 'KNTech đang gọi AI...' : `KNTech AI giải thích phần ${title}`}
               </button>
             </div>
           ))}
           {aiResponse ? (
             <div className="response-box stack">
-              <strong>KNTech AI giai thich</strong>
+              <strong>KNTech AI giải thích</strong>
               <MarkdownMath content={responseText(aiResponse)} />
             </div>
           ) : null}
         </div>
         <div className="stack">
           <div className="card stack lesson-sim-card">
-            <div className="row-between wrap-mobile"><h3>{visualProfile.mode === 'image' ? 'Khong gian minh hoa truc quan' : 'Khong gian mo phong 3D'}</h3><span className="badge badge-variant-2">{simulationLabel}</span></div>
+            <div className="row-between wrap-mobile"><h3>{visualProfile.mode === 'image' ? 'Không gian minh họa trực quan' : 'Không gian mô phỏng 3D'}</h3><span className="badge badge-variant-2">{simulationLabel}</span></div>
             <PhysicsSimulation type={simulationType} params={simulationParams} config={simulationConfigWithLesson} title={data.ten} />
             <button className="button button-secondary" onClick={explainSimulation} disabled={loadingAI}>
-              {loadingAI ? 'KNTech dang goi AI...' : 'KNTech AI giai thich mo phong'}
+              {loadingAI ? 'KNTech đang gọi AI...' : 'KNTech AI giải thích mô phỏng'}
             </button>
             {aiSimResponse ? (
               <div className="response-box stack">
-                <strong>KNTech AI huong dan mo phong</strong>
+                <strong>KNTech AI hướng dẫn mô phỏng</strong>
                 <MarkdownMath content={responseText(aiSimResponse)} />
               </div>
             ) : null}
           </div>
 
           <div className="card stack">
-            <div className="row-between wrap-mobile"><h4>KNTech AI Chat 1-1</h4><span className="badge badge-variant-0">Theo tung bai hoc</span></div>
+            <div className="row-between wrap-mobile"><h4>KNTech AI Chat 1-1</h4><span className="badge badge-variant-0">Theo từng bài học</span></div>
             <div className="lesson-chat-box">
               {chatHistory.map((item, idx) => (
                 <div key={idx} className={`chat-row ${item.role}`}>
                   {item.role === 'assistant' && <Avatar name="Nova KNTech" variant="brand" />}
                   <div className={`chat-bubble ${item.role === 'user' ? 'user' : 'assistant'}`}>
-                    <div className="chat-meta"><strong>{item.role === 'user' ? 'Ban' : 'Nova KNTech'}</strong><span>{item.at}</span></div>
+                    <div className="chat-meta"><strong>{item.role === 'user' ? 'Bạn' : 'Nova KNTech'}</strong><span>{item.at}</span></div>
                     <MarkdownMath content={item.text} />
                   </div>
-                  {item.role === 'user' && <Avatar name="Ban" variant="gradient" />}
+                  {item.role === 'user' && <Avatar name="Bạn" variant="gradient" />}
                 </div>
               ))}
             </div>
             <div className="chat-input-row">
-              <textarea className="textarea" placeholder="Hoi tiep ve bai nay..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} />
-              <button className="button" onClick={sendChat} disabled={loadingAI || !chatInput.trim()}>{loadingAI ? 'Dang goi...' : 'Gui cau hoi'}</button>
+              <textarea className="textarea" placeholder="Hỏi tiếp về bài này..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} />
+              <button className="button" onClick={sendChat} disabled={loadingAI || !chatInput.trim()}>{loadingAI ? 'Đang gọi...' : 'Gửi câu hỏi'}</button>
             </div>
-            <div className="note-box">Bai hoc nay duoc mo rong them phan muc tieu, cong thuc trong tam, bai toan mau va goi y cach quan sat mo phong.</div>
+            <div className="note-box">Bài học này được mở rộng thêm phần mục tiêu, công thức trọng tâm, bài toán mẫu và gợi ý cách quan sát mô phỏng.</div>
           </div>
         </div>
       </div>

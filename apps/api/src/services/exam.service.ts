@@ -26,6 +26,12 @@ type ExamConfig = {
   hideResultDetails?: boolean;
   stopReason?: string | null;
   questionSnapshots?: ExamQuestionSnapshot[];
+  aiBrief?: {
+    yeuCauThem?: string;
+    uuTienLyThuyet?: boolean;
+    uuTienVanDung?: boolean;
+    uuTienVanDungCao?: boolean;
+  };
 };
 
 type ExamOption = {
@@ -68,25 +74,8 @@ function examConfig(value: any): ExamConfig {
   return (value && typeof value === 'object' ? value : {}) as ExamConfig;
 }
 
-function repairMojibake(value: unknown) {
-  let text = String(value ?? '');
-  if (!text.trim()) return '';
-  const suspicious = /Ã|Â|Ä|Æ|Ð|áº|á»|â|�|Ï|Î/;
-  for (let i = 0; i < 3; i += 1) {
-    if (!suspicious.test(text)) break;
-    try {
-      const repaired = Buffer.from(text, 'latin1').toString('utf8');
-      if (!repaired || repaired === text) break;
-      text = repaired;
-    } catch {
-      break;
-    }
-  }
-  return text.replace(/\uFFFD/g, '').trim();
-}
-
 function normalizeWhitespace(value: string) {
-  return repairMojibake(value).replace(/\s+/g, ' ').trim();
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
 function normalizeLatexishText(value: string) {
@@ -629,8 +618,8 @@ function asciiText(value: string) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/Ãƒâ€žÃ¢â‚¬Ëœ/g, 'd')
-    .replace(/Ãƒâ€žÃ‚Â/g, 'D');
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
 }
 
 function pdfEscape(value: string) {
@@ -731,7 +720,7 @@ async function getExamByIdOrThrow(id: string) {
       }
     }
   });
-  if (!exam) throw new HttpError(404, 'KhÃƒÆ’Ã‚Â´ng tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â thi.');
+  if (!exam) throw new HttpError(404, 'Không tìm thấy đề thi.');
   return exam;
 }
 
@@ -773,6 +762,10 @@ export async function taoDeThi(payload: {
   fullScreenRequired?: boolean;
   strictAntiCheat?: boolean;
   hideResultDetails?: boolean;
+  yeuCauThem?: string;
+  uuTienLyThuyet?: boolean;
+  uuTienVanDung?: boolean;
+  uuTienVanDungCao?: boolean;
 }) {
   const lessonBySlug = payload.baiHocSlug ? await prisma.baiHoc.findUnique({ where: { slug: payload.baiHocSlug } }) : null;
   const baiHoc = lessonBySlug ?? await prisma.baiHoc.findFirst({ where: { chuong: { lop: payload.lop } }, orderBy: [{ chuong: { thuTu: 'asc' } }, { thuTu: 'asc' }] });
@@ -781,26 +774,97 @@ export async function taoDeThi(payload: {
   const limitSetting = await prisma.cauHinhHeThong.findUnique({ where: { ma: 'limit.exam_questions' } }).catch(() => null);
   const maxQuestions = Number(limitSetting?.giaTri ?? 50);
   const target = Math.min(payload.soLuongCau, maxQuestions);
+  const desiredLevelCounts = (() => {
+    const counts = { DE: 0, TRUNG_BINH: 0, KHO: 0 } as Record<'DE' | 'TRUNG_BINH' | 'KHO', number>;
+    if (payload.mucDo === 'DE') {
+      counts.DE = target;
+    } else if (payload.mucDo === 'TRUNG_BINH') {
+      counts.TRUNG_BINH = target;
+      if (payload.uuTienVanDung) {
+        const transfer = Math.max(1, Math.floor(target * 0.3));
+        counts.TRUNG_BINH -= transfer;
+        counts.KHO += transfer;
+      }
+      if (payload.uuTienVanDungCao) {
+        const transfer = Math.max(1, Math.ceil(target * 0.2));
+        counts.TRUNG_BINH = Math.max(0, counts.TRUNG_BINH - transfer);
+        counts.KHO += transfer;
+      }
+    } else {
+      counts.KHO = Math.max(1, Math.ceil(target * 0.7));
+      counts.TRUNG_BINH = Math.max(0, target - counts.KHO);
+    }
+    while (counts.DE + counts.TRUNG_BINH + counts.KHO < target) counts.TRUNG_BINH += 1;
+    return counts;
+  })();
 
   if (payload.cheDo !== 'AI') {
-    selectedQuestions = await prisma.cauHoi.findMany({
+    const bankPool = await prisma.cauHoi.findMany({
       where: {
-        mucDo: payload.mucDo,
         trangThaiDuyet: 'DA_DUYET',
         ...(baiHoc ? { baiHocId: baiHoc.id } : {})
       },
-      take: target
+      orderBy: [
+        { soLanSuDung: 'asc' },
+        { createdAt: 'desc' }
+      ],
+      take: Math.max(target * 5, 30)
     });
+    const byLevel = {
+      DE: bankPool.filter((item: any) => item.mucDo === 'DE'),
+      TRUNG_BINH: bankPool.filter((item: any) => item.mucDo === 'TRUNG_BINH'),
+      KHO: bankPool.filter((item: any) => item.mucDo === 'KHO')
+    };
+    const pickedIds = new Set<string>();
+    const pushFromLevel = (level: 'DE' | 'TRUNG_BINH' | 'KHO', count: number) => {
+      for (const item of byLevel[level]) {
+        if (pickedIds.has(item.id)) continue;
+        selectedQuestions.push(item);
+        pickedIds.add(item.id);
+        if (selectedQuestions.length >= target || selectedQuestions.filter((question) => question.mucDo === level).length >= count) break;
+      }
+    };
+    pushFromLevel('DE', desiredLevelCounts.DE);
+    pushFromLevel('TRUNG_BINH', desiredLevelCounts.TRUNG_BINH);
+    pushFromLevel('KHO', desiredLevelCounts.KHO);
+    for (const item of [...byLevel.KHO, ...byLevel.TRUNG_BINH, ...byLevel.DE]) {
+      if (selectedQuestions.length >= target) break;
+      if (pickedIds.has(item.id)) continue;
+      selectedQuestions.push(item);
+      pickedIds.add(item.id);
+    }
   }
 
   if (selectedQuestions.length < target && payload.cheDo !== 'NGAN_HANG') {
     const remain = target - selectedQuestions.length;
     const topic = normalizeWhitespace(baiHoc?.ten ?? `Vật lý lớp ${payload.lop}`);
+    const yeuCauThem = normalizeWhitespace(payload.yeuCauThem || '');
+    const minCalculation = payload.uuTienVanDung ? Math.max(1, Math.ceil(remain * 0.3)) : (payload.mucDo !== 'DE' ? 1 : 0);
+    const minAdvanced = payload.uuTienVanDungCao ? Math.max(1, Math.ceil(remain * 0.2)) : (payload.mucDo === 'KHO' ? Math.max(1, Math.ceil(remain * 0.3)) : 0);
+    const promptPieces = [
+      `Tạo ${remain} câu hỏi ${payload.mucDo} cho chủ đề ${topic}.`,
+      payload.uuTienLyThuyet ? 'Phải có các câu lý thuyết rõ bản chất, diễn đạt chặt chẽ, không mơ hồ.' : '',
+      payload.uuTienVanDung ? 'Phải có câu bài tập vận dụng dựa trên dữ kiện cụ thể hoặc tình huống áp dụng.' : '',
+      payload.uuTienVanDungCao ? 'Phải có ít nhất một số câu vận dụng cao, cần suy luận nhiều bước hoặc kết hợp điều kiện.' : '',
+      minCalculation ? `Ít nhất ${minCalculation} câu phải là câu tính toán hoặc suy luận trực tiếp từ số liệu.` : '',
+      minAdvanced ? `Ít nhất ${minAdvanced} câu phải ở mức khó hoặc có lời giải nhiều bước.` : '',
+      yeuCauThem ? `Yêu cầu thêm của giáo viên: ${yeuCauThem}` : ''
+    ].filter(Boolean).join(' ');
     const aiResult = await runAI({
       loaiTacVu: 'tao_cau_hoi',
       provider: payload.providerAI ?? 'auto',
-      noiDung: `Tạo ${remain} câu hỏi ${payload.mucDo} cho chủ đề ${topic}`,
-      boCanh: { lop: payload.lop, baiHocSlug: baiHoc?.slug, baiHocTen: baiHoc?.ten, soLuong: remain, mucDo: payload.mucDo }
+      noiDung: promptPieces,
+      boCanh: {
+        lop: payload.lop,
+        baiHocSlug: baiHoc?.slug,
+        baiHocTen: baiHoc?.ten,
+        soLuong: remain,
+        mucDo: payload.mucDo,
+        yeuCauThem,
+        uuTienLyThuyet: Boolean(payload.uuTienLyThuyet),
+        uuTienVanDung: Boolean(payload.uuTienVanDung),
+        uuTienVanDungCao: Boolean(payload.uuTienVanDungCao)
+      }
     }, payload.giaoVienId);
 
     const generatedDrafts = extractStructuredAiQuestions(aiResult, remain, topic, payload.mucDo);
@@ -834,6 +898,12 @@ export async function taoDeThi(payload: {
     strictAntiCheat: payload.strictAntiCheat ?? false,
     hideResultDetails: payload.hideResultDetails ?? false,
     stopReason: null,
+    aiBrief: {
+      yeuCauThem: normalizeWhitespace(payload.yeuCauThem || ''),
+      uuTienLyThuyet: Boolean(payload.uuTienLyThuyet),
+      uuTienVanDung: Boolean(payload.uuTienVanDung),
+      uuTienVanDungCao: Boolean(payload.uuTienVanDungCao)
+    },
     soLuongCauYeuCau: payload.soLuongCau,
     soLuongCauThucTe: selectedQuestions.length,
     gioiHanHeThong: maxQuestions,
@@ -883,7 +953,7 @@ export async function listExams(user: { id: string; vaiTro: string }) {
 
 export async function getExamDetail(user: { id: string; vaiTro: string }, examId: string) {
   const exam = await getExamByIdOrThrow(examId);
-  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân xem Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â thi nÃƒÆ’Ã‚Â y.');
+  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'Không có quyền xem đề thi này.');
   const cfg = examConfig(exam.cauHinhJson);
   const snapshots = sanitizeQuestionSnapshots(cfg.questionSnapshots);
   if (snapshots.length) return normalizeExam(exam, snapshots.map(teacherQuestionView));
@@ -895,8 +965,8 @@ export async function getExamDetail(user: { id: string; vaiTro: string }, examId
 export async function updateExamMeta(user: { id: string; vaiTro: string }, examId: string, payload: { ten?: string; thoiGianPhut?: number; maxTabSwitch?: number; daoCauHoi?: boolean; fullScreenRequired?: boolean; strictAntiCheat?: boolean; hideResultDetails?: boolean; questions?: ExamQuestionSnapshot[] }) {
   const exam = await getExamByIdOrThrow(examId);
   const cfg = examConfig(exam.cauHinhJson);
-  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân chÃƒÂ¡Ã‚Â»Ã¢â‚¬Â°nh Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â nÃƒÆ’Ã‚Â y.');
-  if ((cfg.status ?? 'DRAFT') === 'LOCKED') throw new HttpError(400, 'Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã‚Â Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ khÃƒÆ’Ã‚Â³a.');
+  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'Không có quyền chỉnh đề này.');
+  if ((cfg.status ?? 'DRAFT') === 'LOCKED') throw new HttpError(400, 'Đề đã khóa.');
   const nextCfg: ExamConfig = {
     ...cfg,
     maxTabSwitch: payload.maxTabSwitch ?? cfg.maxTabSwitch ?? 99,
@@ -913,7 +983,7 @@ export async function updateExamMeta(user: { id: string; vaiTro: string }, examI
 
 export async function changeExamStatus(user: { id: string; vaiTro: string }, examId: string, action: 'confirm' | 'start' | 'stop' | 'lock' | 'delete') {
   const exam = await getExamByIdOrThrow(examId);
-  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân thao tÃƒÆ’Ã‚Â¡c Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â nÃƒÆ’Ã‚Â y.');
+  if (user.vaiTro === 'GIAO_VIEN' && exam.giaoVienId !== user.id) throw new HttpError(403, 'Không có quyền thao tác đề này.');
   const cfg = examConfig(exam.cauHinhJson);
   if (action === 'delete') {
     await prisma.baiLam.deleteMany({ where: { deThiId: examId } });
@@ -954,10 +1024,10 @@ export async function changeExamStatus(user: { id: string; vaiTro: string }, exa
 
 export async function joinExamRoom(qrToken: string, user: { id: string; vaiTro: string; tenHienThi?: string | null }) {
   const exam = await prisma.deThi.findUnique({ where: { qrToken } });
-  if (!exam) throw new HttpError(404, 'KhÃƒÆ’Ã‚Â´ng tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â thi.');
+  if (!exam) throw new HttpError(404, 'Không tìm thấy đề thi.');
   const cfg = examConfig(exam.cauHinhJson);
   const status = cfg.status ?? 'DRAFT';
-  if (status !== 'STARTED') throw new HttpError(400, 'Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã‚Â chÃƒâ€ Ã‚Â°a Ãƒâ€žÃ¢â‚¬ËœÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£c bÃƒÂ¡Ã‚ÂºÃ‚Â¯t Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§u hoÃƒÂ¡Ã‚ÂºÃ‚Â·c Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ dÃƒÂ¡Ã‚Â»Ã‚Â«ng.');
+  if (status !== 'STARTED') throw new HttpError(400, 'Đề chưa được bắt đầu hoặc đã dừng.');
   let attempt = await prisma.baiLam.findFirst({ where: { deThiId: exam.id, hocSinhId: user.id } });
 
   const snapshots = sanitizeQuestionSnapshots(cfg.questionSnapshots);
@@ -1019,7 +1089,7 @@ export async function joinExamRoom(qrToken: string, user: { id: string; vaiTro: 
 
 export async function examRoomStatus(qrToken: string) {
   const exam = await prisma.deThi.findUnique({ where: { qrToken } });
-  if (!exam) throw new HttpError(404, 'KhÃƒÆ’Ã‚Â´ng tÃƒÆ’Ã‚Â¬m thÃƒÂ¡Ã‚ÂºÃ‚Â¥y Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â thi.');
+  if (!exam) throw new HttpError(404, 'Không tìm thấy đề thi.');
   const cfg = examConfig(exam.cauHinhJson);
   return {
     examId: exam.id,
@@ -1034,13 +1104,13 @@ export async function examRoomStatus(qrToken: string) {
 
 export async function saveAttemptAnswer(user: { id: string }, attemptId: string, payload: { questionId: string; answer: any; elapsedSec: number }) {
   const attempt = await prisma.baiLam.findUnique({ where: { id: attemptId }, include: { deThi: true } });
-  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân cÃƒÂ¡Ã‚ÂºÃ‚Â­p nhÃƒÂ¡Ã‚ÂºÃ‚Â­t bÃƒÆ’Ã‚Â i lÃƒÆ’Ã‚Â m.');
+  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền cập nhật bài làm.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
-  if ((cfg.status ?? 'DRAFT') !== 'STARTED') throw new HttpError(400, 'Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã‚Â Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ dÃƒÂ¡Ã‚Â»Ã‚Â«ng hoÃƒÂ¡Ã‚ÂºÃ‚Â·c chÃƒâ€ Ã‚Â°a bÃƒÂ¡Ã‚ÂºÃ‚Â¯t Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚ÂºÃ‚Â§u.');
+  if ((cfg.status ?? 'DRAFT') !== 'STARTED') throw new HttpError(400, 'Đề đã bị dừng hoặc chưa bắt đầu.');
   const detail = attemptDetail(attempt.chiTietJson);
-  if (detail.status === 'SUBMITTED' || detail.status === 'FORCE_STOPPED') throw new HttpError(400, 'BÃƒÆ’Ã‚Â i lÃƒÆ’Ã‚Â m Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ khÃƒÆ’Ã‚Â³a.');
+  if (detail.status === 'SUBMITTED' || detail.status === 'FORCE_STOPPED') throw new HttpError(400, 'Bài làm đã khóa.');
   const questionOrder = Array.isArray(detail.questionOrder) ? detail.questionOrder : (cfg.danhSachCauHoi ?? []);
-  if (!questionOrder.includes(payload.questionId)) throw new HttpError(400, 'CÃƒÆ’Ã‚Â¢u hÃƒÂ¡Ã‚Â»Ã‚Âi khÃƒÆ’Ã‚Â´ng thuÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢c Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã‚Â nÃƒÆ’Ã‚Â y.');
+  if (!questionOrder.includes(payload.questionId)) throw new HttpError(400, 'Câu hỏi không thuộc đề này.');
   const normalizedAnswer = normalizeAnswer(payload.answer);
   const answers = { ...(detail.answers ?? {}), [payload.questionId]: normalizedAnswer };
   const questionTimes = { ...(detail.questionTimes ?? {}), [payload.questionId]: Math.max(Number(payload.elapsedSec ?? 0), Number((detail.questionTimes ?? {})[payload.questionId] ?? 0)) };
@@ -1053,7 +1123,7 @@ export async function saveAttemptAnswer(user: { id: string }, attemptId: string,
 
 export async function recordTabOut(user: { id: string }, attemptId: string) {
   const attempt = await prisma.baiLam.findUnique({ where: { id: attemptId }, include: { deThi: true } });
-  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân cÃƒÂ¡Ã‚ÂºÃ‚Â­p nhÃƒÂ¡Ã‚ÂºÃ‚Â­t bÃƒÆ’Ã‚Â i lÃƒÆ’Ã‚Â m.');
+  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền cập nhật bài làm.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
   if (detail.status === 'SUBMITTED' || detail.status === 'FORCE_STOPPED') return { tabSwitchCount: Number(detail.tabSwitchCount ?? 0), forced: detail.status === 'FORCE_STOPPED' };
@@ -1062,7 +1132,7 @@ export async function recordTabOut(user: { id: string }, attemptId: string) {
   // maxTabSwitch === 0 means "no tab-out allowed".
   // maxTabSwitch < 0 means "unlimited / disabled anti-tab-out".
   if (maxTabSwitch >= 0 && count > maxTabSwitch) {
-    const forced = await forceStopAttempt(attempt, `VÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Â£t quÃƒÆ’Ã‚Â¡ giÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi hÃƒÂ¡Ã‚ÂºÃ‚Â¡n rÃƒÂ¡Ã‚Â»Ã‚Âi mÃƒÆ’Ã‚Â n hÃƒÆ’Ã‚Â¬nh (${count}/${maxTabSwitch}).`);
+    const forced = await forceStopAttempt(attempt, `Vượt quá giới hạn rời màn hình (${count}/${maxTabSwitch}).`);
     await logSystem({ nhom: 'exam', hanhDong: 'force_stop_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, count, maxTabSwitch } });
     return { tabSwitchCount: count, forced: true, reason: attemptDetail(forced.chiTietJson).forcedStopReason ?? null, maxTabSwitch };
   }
@@ -1073,7 +1143,7 @@ export async function recordTabOut(user: { id: string }, attemptId: string) {
 
 export async function recordIntegrityEvent(user: { id: string }, attemptId: string, payload: { type: string; detail?: string }) {
   const attempt = await prisma.baiLam.findUnique({ where: { id: attemptId }, include: { deThi: true } });
-  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân cÃƒÂ¡Ã‚ÂºÃ‚Â­p nhÃƒÂ¡Ã‚ÂºÃ‚Â­t bÃƒÆ’Ã‚Â i lÃƒÆ’Ã‚Â m.');
+  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền cập nhật bài làm.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
   if (detail.status === 'SUBMITTED' || detail.status === 'FORCE_STOPPED') return { ok: true, forced: detail.status === 'FORCE_STOPPED' };
@@ -1088,7 +1158,7 @@ export async function recordIntegrityEvent(user: { id: string }, attemptId: stri
     const severeCount = events.filter((item: any) => ['devtools-open', 'fullscreen-exit', 'printscreen', 'multi-screen-suspect', 'blur-window'].includes(item.type)).length;
     const policyViolations = events.filter((item: any) => ['copy-blocked', 'shortcut-blocked', 'selection-blocked', 'drag-blocked'].includes(item.type)).length;
     if (severeCount >= 2 || policyViolations >= 5 || event.type === 'printscreen') {
-      const stopped = await forceStopAttempt(attempt, `PhiÃƒÆ’Ã‚Âªn thi bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ khÃƒÆ’Ã‚Â³a do vi phÃƒÂ¡Ã‚ÂºÃ‚Â¡m chÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng lÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â¡p ÃƒÆ’Ã‚Â¡n (${event.type}).`);
+      const stopped = await forceStopAttempt(attempt, `Phiên thi bị khóa do vi phạm chống lặp đáp án (${event.type}).`);
       forced = true;
       reason = attemptDetail(stopped.chiTietJson).forcedStopReason ?? null;
       nextStatus = 'FORCE_STOPPED';
@@ -1104,7 +1174,7 @@ export async function recordIntegrityEvent(user: { id: string }, attemptId: stri
 
 export async function submitAttempt(user: { id: string }, attemptId: string) {
   const attempt = await prisma.baiLam.findUnique({ where: { id: attemptId }, include: { deThi: true } });
-  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'KhÃƒÆ’Ã‚Â´ng cÃƒÆ’Ã‚Â³ quyÃƒÂ¡Ã‚Â»Ã‚Ân nÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢p bÃƒÆ’Ã‚Â i.');
+  if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền nộp bài.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
   const snapshots = sanitizeQuestionSnapshots(cfg.questionSnapshots);

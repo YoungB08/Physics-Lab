@@ -18,7 +18,11 @@ const createExamSchema = z.object({
   daoCauHoi: z.boolean().optional(),
   fullScreenRequired: z.boolean().optional(),
   strictAntiCheat: z.boolean().optional(),
-  hideResultDetails: z.boolean().optional()
+  hideResultDetails: z.boolean().optional(),
+  yeuCauThem: z.string().max(2000).optional(),
+  uuTienLyThuyet: z.boolean().optional(),
+  uuTienVanDung: z.boolean().optional(),
+  uuTienVanDungCao: z.boolean().optional()
 });
 
 const updateExamSchema = z.object({

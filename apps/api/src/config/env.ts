@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
@@ -8,11 +8,7 @@ const __dirname = path.dirname(__filename);
 const apiDir = path.resolve(__dirname, '../../');
 const rootDir = path.resolve(apiDir, '../..');
 
-const candidateEnvPaths = [
-  path.join(rootDir, '.env'),
-  path.join(apiDir, '.env'),
-  '.env'
-];
+const candidateEnvPaths = [path.join(rootDir, '.env')];
 
 for (const envPath of candidateEnvPaths) {
   dotenv.config({ path: envPath, override: false });
@@ -25,6 +21,7 @@ const schema = z.object({
   URL_API: z.string().default('http://localhost:4000'),
   URL_GIAO_DIEN: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().default('mysql://root:root@localhost:3306/vatly_thpt'),
+  DATABASE_URL_WEB: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().default('doi_secret_nay'),
   JWT_REFRESH_SECRET: z.string().default('doi_secret_nay_lan_2'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('1d'),
@@ -32,18 +29,25 @@ const schema = z.object({
   AI_MAC_DINH: z.enum(['gpt', 'gemini']).default('gpt'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_API_KEY_ALT: z.string().optional(),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  OPENAI_MODEL: z.string().default('gpt-5.4'),
   GEMINI_API_KEY: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3-pro-preview'),
   CHO_PHEP_AI_GPT: z.string().default('true'),
   CHO_PHEP_AI_GEMINI: z.string().default('true'),
   DUONG_DAN_UPLOAD: z.string().default('./uploads')
 });
 
 const parsed = schema.parse(process.env);
+const databaseUrl = parsed.CHE_DO === 'web' && parsed.DATABASE_URL_WEB?.trim()
+  ? parsed.DATABASE_URL_WEB.trim()
+  : parsed.DATABASE_URL.trim();
+
+process.env.DATABASE_URL = databaseUrl;
+
 export const env = {
   ...parsed,
+  DATABASE_URL: databaseUrl,
   OPENAI_API_KEY: (parsed.OPENAI_API_KEY || parsed.OPENAI_API_KEY_ALT || process.env.OPENAI_APIKEY || '').trim() || undefined,
   GEMINI_API_KEY: (parsed.GEMINI_API_KEY || parsed.GOOGLE_API_KEY || '').trim() || undefined
 };

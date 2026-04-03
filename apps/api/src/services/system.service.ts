@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = [
   { ma: 'installer.completed', nhom: 'he_thong', ten: 'Đã cài đặt', moTa: 'Đánh dấu hệ thống đã hoàn tất installer', giaTri: false },
   { ma: 'site.name', nhom: 'thong_tin', ten: 'Tên hệ thống', moTa: 'Tên hiển thị toàn hệ thống', giaTri: `${BRAND} Physics Lab` },
   { ma: 'site.brand', nhom: 'thong_tin', ten: 'Thương hiệu', moTa: 'Tên thương hiệu ngắn', giaTri: BRAND },
-  { ma: 'site.contact_email', nhom: 'thong_tin', ten: 'Email liên hệ', moTa: 'Email hỗ trợ', giaTri: 'support@kntech.vn' },
+  { ma: 'site.contact_email', nhom: 'thong_tin', ten: 'Email liên hệ', moTa: 'Email hỗ trợ', giaTri: 'support@kntech.site' },
   { ma: 'site.description', nhom: 'thong_tin', ten: 'Mô tả ngắn', moTa: 'Mô tả tại trang chủ và màn hình đăng nhập', giaTri: `${BRAND} Physics Lab - nền tảng học Vật lý THPT với mô phỏng 3D, AI và CMS quản trị toàn quyền.` },
   { ma: 'limit.upload_mb', nhom: 'gioi_han', ten: 'Giới hạn upload MB', moTa: 'Dung lượng tối đa mỗi tệp', giaTri: 20 },
   { ma: 'limit.exam_questions', nhom: 'gioi_han', ten: 'Số câu hỏi tối đa mỗi đề', moTa: 'Giới hạn khi tạo đề', giaTri: 50 },
@@ -86,13 +86,14 @@ export function extractDbInfo() {
   try {
     const url = new URL(env.DATABASE_URL);
     return {
+      mode: env.CHE_DO,
       host: url.hostname || 'localhost',
       port: Number(url.port || 3306),
       database: url.pathname.replace(/^\//, '') || 'vatly_thpt',
       user: decodeURIComponent(url.username || 'root')
     };
   } catch {
-    return { host: 'localhost', port: 3306, database: 'vatly_thpt', user: 'root' };
+    return { mode: env.CHE_DO, host: 'localhost', port: 3306, database: 'vatly_thpt', user: 'root' };
   }
 }
 
@@ -108,7 +109,7 @@ export async function logSystem(input: { muc?: string; nhom: string; hanhDong: s
         nguoiDungId: input.nguoiDungId ?? null
       }
     });
-  } catch {}
+  } catch { }
 }
 
 export async function ensureSystemSettings() {
@@ -329,12 +330,16 @@ export async function runInstaller(input: {
 
   await prisma.trangNoiDung.upsert({
     where: { slug: 'trang-chu' },
-    update: { tieuDe: input.systemName, noiDungMarkdown: `# ${input.systemName}
+    update: {
+      tieuDe: input.systemName, noiDungMarkdown: `# ${input.systemName}
 
-${BRAND} installer đã hoàn tất. Đăng nhập bằng CMS Root để quản trị toàn hệ thống hoặc Admin để vận hành học vụ.` },
-    create: { tieuDe: input.systemName, slug: 'trang-chu', moTa: 'Trang mặc định do installer tạo ra', noiDungMarkdown: `# ${input.systemName}
+${BRAND} installer đã hoàn tất. Đăng nhập bằng CMS Root để quản trị toàn hệ thống hoặc Admin để vận hành học vụ.`
+    },
+    create: {
+      tieuDe: input.systemName, slug: 'trang-chu', moTa: 'Trang mặc định do installer tạo ra', noiDungMarkdown: `# ${input.systemName}
 
-${BRAND} installer đã hoàn tất.`, trangThai: 'XUAT_BAN' }
+${BRAND} installer đã hoàn tất.`, trangThai: 'XUAT_BAN'
+    }
   });
 
   await logSystem({ nhom: 'installer', hanhDong: 'run_installer', doiTuong: 'system', duLieuJson: { rootEmail: input.rootEmail, adminEmail: input.adminEmail } });

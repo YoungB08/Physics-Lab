@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+﻿import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Shell } from './layouts/Shell';
 import { DangNhapPage } from './pages/DangNhapPage';
@@ -16,6 +16,7 @@ import { PageLoader } from './components/PageLoader';
 import { DieuKhoanPage } from './pages/DieuKhoanPage';
 import { BanQuyenPage } from './pages/BanQuyenPage';
 import { PhongThiPageClean } from './pages/PhongThiPageClean';
+import { webAppConfig } from './config/webAppConfig';
 
 function Protected({ children }: { children: JSX.Element }) {
   const token = useAuthStore((s) => s.accessToken);
@@ -36,7 +37,7 @@ function RouteLoader() {
     const timer = window.setTimeout(() => setLoading(false), 420);
     return () => window.clearTimeout(timer);
   }, [location.pathname]);
-  return <PageLoader visible={loading} label={`KNTech đang mở ${location.pathname === '/' ? 'dashboard' : location.pathname}`} />;
+  return <PageLoader visible={loading} label={`${webAppConfig.brandName} đang mở ${location.pathname === '/' ? 'dashboard' : location.pathname}`} />;
 }
 
 export default function App() {
@@ -46,8 +47,8 @@ export default function App() {
   useEffect(() => { hydrate(); }, [hydrate]);
   useEffect(() => { api.systemInstallStatus().then((r) => setInstalled(r.installed)).catch(() => setInstalled(true)); }, []);
 
-  if (installed === null) return <div className="auth-page"><div className="auth-panel">KNTech đang kiểm tra cài đặt...</div></div>;
-  if (!installed) return <InstallerPage />;
+  if (installed === null) return <div className="auth-page"><div className="auth-panel">{webAppConfig.brandName} đang kiểm tra cài đặt...</div></div>;
+  if (!installed) return webAppConfig.showInstaller ? <InstallerPage /> : <Navigate to="/dang-nhap" replace />;
 
   return (
     <>
@@ -58,9 +59,9 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="chuong-trinh" element={<ChuongTrinhPage />} />
           <Route path="bai-hoc/:slug" element={<BaiHocPage />} />
-          <Route path="hoi-ai" element={<HoiAIPage />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="tao-de" element={<TaoDePageClean />} />
+          {webAppConfig.features.aiConsole ? <Route path="hoi-ai" element={<HoiAIPage />} /> : null}
+          {webAppConfig.features.chat ? <Route path="chat" element={<ChatPage />} /> : null}
+          {webAppConfig.features.examBuilder ? <Route path="tao-de" element={<TaoDePageClean />} /> : null}
           <Route path="quan-tri" element={<RoleProtected roles={['QUAN_TRI_VIEN', 'CMS_ROOT']}><AdminPage /></RoleProtected>} />
           <Route path="cms" element={<RoleProtected roles={['CMS_ROOT']}><AdminPage cmsMode /></RoleProtected>} />
           <Route path="phong-thi/:qrToken" element={<Protected><PhongThiPageClean /></Protected>} />

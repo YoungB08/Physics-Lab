@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -24,7 +24,10 @@ export function ChuongTrinhPage() {
 
   useEffect(() => { api.getChuongTrinh().then(setRows); }, []);
 
-  const allLessons = useMemo(() => rows.flatMap((chapter) => (chapter.baiHoc || []).map((lesson: any) => ({ ...lesson, chuong: { ten: chapter.ten, lop: chapter.lop } }))), [rows]);
+  const allLessons = useMemo(
+    () => rows.flatMap((chapter) => (chapter.baiHoc || []).map((lesson: any) => ({ ...lesson, chuong: { ten: chapter.ten, lop: chapter.lop } }))),
+    [rows]
+  );
 
   const topics = useMemo(() => {
     const filtered = allLessons.filter((lesson: any) => {

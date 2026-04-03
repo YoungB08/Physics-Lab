@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+﻿import { spawnSync } from 'node:child_process';
 import { existsSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,9 +16,7 @@ function run(cmd, args, cwd = root) {
 
 function ensureEnv() {
   const rootEnv = path.join(root, '.env');
-  const apiEnv = path.join(api, '.env');
   if (!existsSync(rootEnv)) copyFileSync(path.join(root, '.env.example'), rootEnv);
-  if (!existsSync(apiEnv)) copyFileSync(path.join(api, '.env.example'), apiEnv);
 }
 
 ensureEnv();

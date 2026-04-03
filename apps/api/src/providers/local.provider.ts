@@ -1,4 +1,4 @@
-import type { AIGeneratedQuestion, AIProvider, AIRequestInput, AIResponseEnvelope } from './ai.provider.js';
+﻿import type { AIGeneratedQuestion, AIProvider, AIRequestInput, AIResponseEnvelope } from './ai.provider.js';
 
 function isGreeting(text: string) {
   const normalized = text.trim().toLowerCase();
@@ -95,6 +95,9 @@ function buildQuestions(input: AIRequestInput) {
   const base = String(input.boCanh?.baiHocTen ?? input.boCanh?.baiHocSlug ?? 'chủ đề tổng hợp');
   const amount = Number(input.boCanh?.soLuong ?? 5);
   const level = String(input.boCanh?.mucDo ?? 'TRUNG_BINH') as 'DE' | 'TRUNG_BINH' | 'KHO';
+  const preferTheory = Boolean(input.boCanh?.uuTienLyThuyet);
+  const preferApply = Boolean(input.boCanh?.uuTienVanDung);
+  const preferAdvanced = Boolean(input.boCanh?.uuTienVanDungCao);
   const focusByIndex = [
     'bản chất hiện tượng',
     'điều kiện áp dụng',
@@ -135,19 +138,20 @@ function buildQuestions(input: AIRequestInput) {
     '{topic} không liên quan đến giới hạn áp dụng của mô hình bài toán.'
   ];
   const answerKeys = ['A', 'B', 'C', 'D'] as const;
-  const generated_questions: AIGeneratedQuestion[] = Array.from({ length: amount }).map((_, i) => {
-    const focus = focusByIndex[i % focusByIndex.length];
-    const template = stemTemplates[level][i % stemTemplates[level].length];
+
+  function buildTheoryQuestion(index: number): AIGeneratedQuestion {
+    const focus = focusByIndex[index % focusByIndex.length];
+    const template = stemTemplates[level][index % stemTemplates[level].length];
     const stem = template.replaceAll('{topic}', base).replaceAll('{focus}', focus);
-    const correctText = correctPool[i % correctPool.length]
+    const correctText = correctPool[index % correctPool.length]
       .replaceAll('{topic}', base)
       .replaceAll('{focus}', focus);
     const wrongTexts = Array.from({ length: 3 }).map((__, wrongIndex) =>
-      distractorPool[(i + wrongIndex) % distractorPool.length]
+      distractorPool[(index + wrongIndex) % distractorPool.length]
         .replaceAll('{topic}', base)
         .replaceAll('{focus}', focus)
     );
-    const correctIndex = i % 4;
+    const correctIndex = index % 4;
     const optionTexts = [...wrongTexts];
     optionTexts.splice(correctIndex, 0, correctText);
     const correctKey = answerKeys[correctIndex];
@@ -159,7 +163,132 @@ function buildQuestions(input: AIRequestInput) {
       correctAnswers: [correctKey],
       explanation: `Đáp án đúng là ${correctKey} vì câu hỏi này cần xử lý ${base} theo ${focus}, bám sát điều kiện và ý nghĩa vật lý thay vì nhớ máy móc.`
     };
-  });
+  }
+
+  function buildCalculationQuestion(index: number): AIGeneratedQuestion {
+    const amplitude = 2 + (index % 5);
+    const omega = 2 + (index % 4);
+    const mass = 0.2 + (index % 3) * 0.1;
+    const velocity = 5 + index;
+    const resistance = 4 + index;
+    const current = 1 + (index % 4);
+    const scenarios = [
+      {
+        stem: `Một vật dao động điều hòa theo phương trình x = ${amplitude}cos(${omega}t) cm. Vận tốc cực đại của vật là bao nhiêu?`,
+        options: [
+          `${amplitude * omega} cm/s`,
+          `${amplitude + omega} cm/s`,
+          `${(amplitude / omega).toFixed(2)} cm/s`,
+          `${omega * omega} cm/s`
+        ],
+        correctIndex: 0,
+        explanation: `Với dao động điều hòa, vận tốc cực đại v_max = ωA = ${omega} × ${amplitude} = ${amplitude * omega} cm/s.`
+      },
+      {
+        stem: `Một vật khối lượng ${mass.toFixed(1)} kg chuyển động với tốc độ ${velocity} m/s. Động năng của vật bằng bao nhiêu?`,
+        options: [
+          `${(0.5 * mass * velocity * velocity).toFixed(1)} J`,
+          `${(mass * velocity).toFixed(1)} J`,
+          `${(mass * velocity * velocity).toFixed(1)} J`,
+          `${(velocity / mass).toFixed(1)} J`
+        ],
+        correctIndex: 0,
+        explanation: `Động năng Wđ = 1/2 mv² = 1/2 × ${mass.toFixed(1)} × ${velocity}² = ${(0.5 * mass * velocity * velocity).toFixed(1)} J.`
+      },
+      {
+        stem: `Đặt hiệu điện thế U = ${current * resistance} V vào điện trở R = ${resistance} Ω. Cường độ dòng điện qua điện trở là bao nhiêu?`,
+        options: [
+          `${current} A`,
+          `${resistance} A`,
+          `${current * resistance} A`,
+          `${(resistance / current).toFixed(1)} A`
+        ],
+        correctIndex: 0,
+        explanation: `Theo định luật Ôm: I = U/R = ${current * resistance}/${resistance} = ${current} A.`
+      }
+    ];
+    const selected = scenarios[index % scenarios.length];
+    return {
+      stem: selected.stem,
+      level: level === 'DE' ? 'TRUNG_BINH' : level,
+      kind: 'MOT_DAP_AN',
+      options: selected.options.map((text, optionIndex) => ({ key: answerKeys[optionIndex], text })),
+      correctAnswers: [answerKeys[selected.correctIndex]],
+      explanation: selected.explanation
+    };
+  }
+
+  function buildAdvancedQuestion(index: number): AIGeneratedQuestion {
+    const v0 = 4 + index;
+    const a = 2 + (index % 3);
+    const t = 2 + (index % 2);
+    const distance = v0 * t + 0.5 * a * t * t;
+    const circuitR1 = 4 + index;
+    const circuitR2 = 6 + index;
+    const totalR = circuitR1 + circuitR2;
+    const voltage = totalR * 2;
+    const scenarios = [
+      {
+        stem: `Một vật chuyển động thẳng nhanh dần đều với vận tốc đầu ${v0} m/s, gia tốc ${a} m/s² trong ${t} s. Quãng đường vật đi được là bao nhiêu?`,
+        options: [
+          `${distance} m`,
+          `${v0 + a * t} m`,
+          `${a * t * t} m`,
+          `${v0 * t} m`
+        ],
+        correctIndex: 0,
+        explanation: `Quãng đường s = v0t + 1/2at² = ${v0}×${t} + 1/2×${a}×${t}² = ${distance} m.`
+      },
+      {
+        stem: `Hai điện trở R1 = ${circuitR1} Ω và R2 = ${circuitR2} Ω mắc nối tiếp vào nguồn U = ${voltage} V. Cường độ dòng điện của mạch là bao nhiêu?`,
+        options: [
+          `2 A`,
+          `${voltage} A`,
+          `${totalR} A`,
+          `${(voltage / circuitR1).toFixed(1)} A`
+        ],
+        correctIndex: 0,
+        explanation: `Mắc nối tiếp nên R_tđ = R1 + R2 = ${totalR} Ω. Suy ra I = U/R_tđ = ${voltage}/${totalR} = 2 A.`
+      },
+      {
+        stem: `Một con lắc lò xo có độ cứng k = ${40 + index * 5} N/m, vật nặng m = ${(0.2 + index * 0.05).toFixed(2)} kg. Đại lượng nào cần xác định trước để tính chu kì dao động chính xác?`,
+        options: [
+          'Tỉ số m/k rồi suy ra T = 2π√(m/k).',
+          'Biên độ dao động vì chu kì phụ thuộc trực tiếp vào biên độ.',
+          'Vận tốc ban đầu vì chu kì tăng theo vận tốc.',
+          'Li độ ban đầu vì chu kì tỉ lệ với li độ cực đại.'
+        ],
+        correctIndex: 0,
+        explanation: 'Chu kì con lắc lò xo được xác định bởi T = 2π√(m/k), không phụ thuộc biên độ nhỏ hay vận tốc ban đầu.'
+      }
+    ];
+    const selected = scenarios[index % scenarios.length];
+    return {
+      stem: selected.stem,
+      level: 'KHO',
+      kind: 'MOT_DAP_AN',
+      options: selected.options.map((text, optionIndex) => ({ key: answerKeys[optionIndex], text })),
+      correctAnswers: [answerKeys[selected.correctIndex]],
+      explanation: selected.explanation
+    };
+  }
+
+  const advancedCount = preferAdvanced ? Math.max(1, Math.ceil(amount * 0.2)) : (level === 'KHO' ? Math.max(1, Math.ceil(amount * 0.3)) : 0);
+  const calculationCount = preferApply ? Math.max(1, Math.ceil(amount * 0.3)) : (level !== 'DE' ? Math.max(1, Math.floor(amount * 0.2)) : 0);
+  const theoryCount = preferTheory ? Math.max(1, Math.ceil(amount * 0.3)) : 0;
+  const generated_questions: AIGeneratedQuestion[] = [];
+
+  for (let i = 0; i < amount; i += 1) {
+    if (generated_questions.length < advancedCount) {
+      generated_questions.push(buildAdvancedQuestion(i));
+    } else if (generated_questions.length < advancedCount + calculationCount) {
+      generated_questions.push(buildCalculationQuestion(i));
+    } else if (generated_questions.length < advancedCount + calculationCount + theoryCount) {
+      generated_questions.push(buildTheoryQuestion(i));
+    } else {
+      generated_questions.push((preferApply || level !== 'DE') ? buildCalculationQuestion(i) : buildTheoryQuestion(i));
+    }
+  }
 
   return {
     title: `Bộ câu hỏi ${base}`,
@@ -167,7 +296,7 @@ function buildQuestions(input: AIRequestInput) {
     generated_questions,
     tieu_de: `Sinh ${amount} câu hỏi cho ${base}`,
     tom_tat: 'Đã tạo bộ câu hỏi gợi ý bằng AI nội bộ.',
-    noi_dung_chinh: Array.from({ length: amount }).map((_, i) => `Câu ${i + 1}: Phát biểu nào đúng với nội dung ${base}?`),
+    noi_dung_chinh: Array.from({ length: amount }).map((_, i) => `Câu ${i + 1}: phát biểu nào đúng với nội dung ${base}?`),
     goi_y: ['Có thể lưu vào ngân hàng câu hỏi và chỉnh sửa trong CMS.'],
     dap_an: 'A',
     giai_thich: 'Đây là bộ câu hỏi gợi ý tự động, giáo viên nên rà soát trước khi dùng chính thức.'
@@ -178,6 +307,7 @@ function buildLessonChat(input: AIRequestInput) {
   const latestMessage = String(input.boCanh?.latestMessage || input.noiDung || '').trim();
   const lesson = typeof input.boCanh?.lesson === 'string' ? input.boCanh.lesson : 'bài này';
   const topic = typeof input.boCanh?.topic === 'string' ? input.boCanh.topic : 'Vật lý';
+  const hasImage = typeof input.hinhAnhBase64 === 'string' && input.hinhAnhBase64.trim().startsWith('data:image/');
 
   if (isGreeting(latestMessage)) {
     const greeting = `Chào bạn, mình đang ở đây để học cùng bạn bài ${lesson}. Bạn muốn ôn lý thuyết, hỏi công thức hay làm một bài cụ thể?`;
@@ -195,6 +325,7 @@ function buildLessonChat(input: AIRequestInput) {
     `Mình đang bám ngữ cảnh bài ${lesson}.`,
     '',
     `Bạn hỏi: ${latestMessage}`,
+    hasImage ? 'Bạn có gửi kèm ảnh. AI nội bộ đã nhận ảnh nhưng khả năng phân tích hình còn hạn chế hơn provider ngoài.' : '',
     '',
     `Trả lời nhanh: nếu đây là phần thuộc ${topic}, mình sẽ ưu tiên nêu ý chính trước, rồi mới bung công thức hoặc từng bước nếu bạn cần.`,
     '',

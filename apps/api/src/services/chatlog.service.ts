@@ -1,8 +1,9 @@
-import { prisma } from '../config/prisma.js';
+﻿import { prisma } from '../config/prisma.js';
 import { runAI } from './ai.service.js';
 import { HttpError, logSystem } from './system.service.js';
 
 type UserRef = { id: string; vaiTro?: string; tenHienThi?: string | null };
+type ConversationKind = 'lesson_1_1' | 'ai_console';
 
 function normalizeText(value: string) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -12,22 +13,30 @@ function safeObject(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, any>) : {};
 }
 
-function conversationTitle(lessonName: string, firstMessage?: string) {
+function conversationTitle(lessonName?: string, firstMessage?: string, kind: ConversationKind = 'lesson_1_1') {
   const text = normalizeText(firstMessage || '');
-  if (!text) return `Chat ve ${lessonName}`;
-  return text.length > 48 ? `${text.slice(0, 48).trim()}...` : text;
+  if (text) return text.length > 48 ? `${text.slice(0, 48).trim()}...` : text;
+  if (kind === 'ai_console') return 'Chat với AI';
+  return `Chat về ${lessonName || 'bài học'}`;
+}
+
+function conversationSummary(lessonName?: string, firstMessage?: string, kind: ConversationKind = 'lesson_1_1') {
+  const text = normalizeText(firstMessage || '');
+  if (text) return text.length > 140 ? `${text.slice(0, 140).trim()}...` : text;
+  if (kind === 'ai_console') return 'Phiên chat AI tổng quát';
+  return `Chat về ${lessonName || 'bài học'}`;
 }
 
 async function getLessonBySlugOrThrow(slug: string) {
   const lesson = await prisma.baiHoc.findUnique({ where: { slug } });
-  if (!lesson) throw new HttpError(404, 'Khong tim thay bai hoc.');
+  if (!lesson) throw new HttpError(404, 'Không tìm thấy bài học.');
   return lesson;
 }
 
 async function getConversationOrThrow(userId: string, id: string) {
   const row = await prisma.nhatKyHeThong.findUnique({ where: { id } });
   if (!row || row.nhom !== 'chat' || row.hanhDong !== 'conversation' || row.nguoiDungId !== userId) {
-    throw new HttpError(404, 'Khong tim thay cuoc tro chuyen.');
+    throw new HttpError(404, 'Không tìm thấy cuộc trò chuyện.');
   }
   return row;
 }
@@ -38,14 +47,28 @@ function buildChatPrompt(input: {
   history: Array<{ vaiTro: string; noiDung: string }>;
   message: string;
 }) {
-  const recent = input.history.slice(-6).map((item) => `${item.vaiTro === 'user' ? 'Hoc sinh' : 'Nova'}: ${item.noiDung}`);
+  const recent = input.history.slice(-6).map((item) => `${item.vaiTro === 'user' ? 'Học sinh' : 'Nova'}: ${item.noiDung}`);
   return [
-    `Ban dang chat 1-1 ve bai ${input.lessonName}${input.topic ? ` (${input.topic})` : ''}.`,
-    'Tra loi nhu mot nguoi that: tu nhien, than thien, ngan gon truoc, ro rang va dung trong tam.',
-    'Neu nguoi dung chi chao hoi nhu "hi", "hello", "chao", hay chao lai tu nhien trong 1-2 cau va moi ho hoi tiep, khong bien thanh bai giang.',
-    'Neu la cau hoi hoc tap, uu tien tra loi truc tiep, co cong thuc khi that su can, va tranh van phong may moc.',
-    recent.length ? `Ngu canh chat gan day:\n${recent.join('\n')}` : '',
-    `Tin nhan moi: ${input.message}`
+    `Bạn đang chat 1-1 về bài ${input.lessonName}${input.topic ? ` (${input.topic})` : ''}.`,
+    'Trả lời như một người thật: tự nhiên, thân thiện, ngắn gọn trước, rõ ràng và đúng trọng tâm.',
+    'Nếu người dùng chỉ chào hỏi như "hi", "hello", "chào", hãy chào lại tự nhiên trong 1-2 câu và mời họ hỏi tiếp, không biến thành bài giảng.',
+    'Nếu là câu hỏi học tập, ưu tiên trả lời trực tiếp, có công thức khi thật sự cần, và tránh văn phong máy móc.',
+    recent.length ? `Ngữ cảnh chat gần đây:\n${recent.join('\n')}` : '',
+    `Tin nhắn mới: ${input.message}`
+  ].filter(Boolean).join('\n\n');
+}
+
+function buildConsolePrompt(input: {
+  history: Array<{ vaiTro: string; noiDung: string }>;
+  message: string;
+}) {
+  const recent = input.history.slice(-6).map((item) => `${item.vaiTro === 'user' ? 'Người dùng' : 'Nova'}: ${item.noiDung}`);
+  return [
+    'Bạn đang chat trong giao diện Hỏi AI tổng quát của KNTech.',
+    'Trả lời hoàn toàn bằng tiếng Việt có dấu, rõ ràng, tự nhiên, tránh văn phong máy móc.',
+    'Nếu là câu hỏi học tập thì giải thích trực tiếp, có ví dụ hoặc công thức khi cần.',
+    recent.length ? `Ngữ cảnh chat gần đây:\n${recent.join('\n')}` : '',
+    `Tin nhắn mới: ${input.message}`
   ].filter(Boolean).join('\n\n');
 }
 
@@ -87,7 +110,8 @@ export async function listChatConversations(user: UserRef, lessonSlug?: string) 
     const latestData = safeObject(latest?.duLieuJson);
     return {
       id: row.id,
-      tieuDe: data.tieuDe || 'Cuoc tro chuyen',
+      kind: String(data.kind || 'lesson_1_1'),
+      tieuDe: data.tieuDe || 'Cuộc trò chuyện',
       tomTat: data.tomTat || latestData.noiDung || '',
       createdAt: row.createdAt,
       updatedAt: row.createdAt,
@@ -102,31 +126,44 @@ export async function listChatConversations(user: UserRef, lessonSlug?: string) 
   });
 }
 
-export async function createChatConversation(user: UserRef, payload: { lessonSlug: string; tieuDe?: string; firstMessage?: string }) {
-  const lesson = await getLessonBySlugOrThrow(payload.lessonSlug);
-  const tieuDe = normalizeText(payload.tieuDe || '') || conversationTitle(lesson.ten, payload.firstMessage);
-  const tomTat = normalizeText(payload.firstMessage || '') || `Chat ve ${lesson.ten}`;
+export async function createChatConversation(user: UserRef, payload: { lessonSlug?: string; kind?: ConversationKind; tieuDe?: string; firstMessage?: string }) {
+  const kind = payload.kind || (payload.lessonSlug ? 'lesson_1_1' : 'ai_console');
+  const lesson = payload.lessonSlug ? await getLessonBySlugOrThrow(payload.lessonSlug) : null;
+  if (kind === 'lesson_1_1' && !lesson) throw new HttpError(400, 'Thiếu bài học cho cuộc trò chuyện này.');
+
+  const tieuDe = normalizeText(payload.tieuDe || '') || conversationTitle(lesson?.ten, payload.firstMessage, kind);
+  const tomTat = conversationSummary(lesson?.ten, payload.firstMessage, kind);
+  const payloadJson = lesson
+    ? { kind, baiHocId: lesson.id, baiHocSlug: lesson.slug, tieuDe, tomTat }
+    : { kind, tieuDe, tomTat };
 
   const row = await prisma.nhatKyHeThong.create({
     data: {
       muc: 'INFO',
       nhom: 'chat',
       hanhDong: 'conversation',
-      doiTuong: lesson.id,
+      doiTuong: lesson?.id || kind,
       nguoiDungId: user.id,
-      duLieuJson: { baiHocId: lesson.id, baiHocSlug: lesson.slug, tieuDe, tomTat } as any
+      duLieuJson: payloadJson as any
     }
   });
 
-  await logSystem({ nhom: 'chat', hanhDong: 'create_conversation', doiTuong: row.id, nguoiDungId: user.id, duLieuJson: { lessonSlug: payload.lessonSlug } });
+  await logSystem({
+    nhom: 'chat',
+    hanhDong: 'create_conversation',
+    doiTuong: row.id,
+    nguoiDungId: user.id,
+    duLieuJson: { lessonSlug: payload.lessonSlug || null, kind }
+  });
 
   return {
     id: row.id,
+    kind,
     tieuDe,
     tomTat,
     createdAt: row.createdAt,
     updatedAt: row.createdAt,
-    baiHoc: { id: lesson.id, ten: lesson.ten, slug: lesson.slug, moTa: lesson.moTa, chuDeThi: lesson.chuDeThi },
+    baiHoc: lesson ? { id: lesson.id, ten: lesson.ten, slug: lesson.slug, moTa: lesson.moTa, chuDeThi: lesson.chuDeThi } : null,
     messages: []
   };
 }
@@ -134,8 +171,9 @@ export async function createChatConversation(user: UserRef, payload: { lessonSlu
 export async function getChatConversationDetail(user: UserRef, id: string) {
   const row = await getConversationOrThrow(user.id, id);
   const data = safeObject(row.duLieuJson);
-  const lesson = await prisma.baiHoc.findUnique({ where: { id: String(data.baiHocId || '') }, select: { id: true, ten: true, slug: true, moTa: true, chuDeThi: true } });
-  if (!lesson) throw new HttpError(404, 'Khong tim thay bai hoc cua cuoc tro chuyen.');
+  const lesson = data.baiHocId
+    ? await prisma.baiHoc.findUnique({ where: { id: String(data.baiHocId || '') }, select: { id: true, ten: true, slug: true, moTa: true, chuDeThi: true } })
+    : null;
 
   const messages = await prisma.nhatKyHeThong.findMany({
     where: { nhom: 'chat', hanhDong: 'message', doiTuong: id },
@@ -144,7 +182,8 @@ export async function getChatConversationDetail(user: UserRef, id: string) {
 
   return {
     id: row.id,
-    tieuDe: data.tieuDe || 'Cuoc tro chuyen',
+    kind: String(data.kind || 'lesson_1_1'),
+    tieuDe: data.tieuDe || 'Cuộc trò chuyện',
     tomTat: data.tomTat || '',
     createdAt: row.createdAt,
     updatedAt: row.createdAt,
@@ -156,20 +195,29 @@ export async function getChatConversationDetail(user: UserRef, id: string) {
         vaiTro: msg.vaiTro || 'assistant',
         noiDung: msg.noiDung || '',
         provider: msg.provider || null,
+        hinhAnhBase64: msg.hinhAnhBase64 || null,
         createdAt: message.createdAt
       };
     })
   };
 }
 
-export async function sendChatMessage(user: UserRef, conversationId: string, payload: { noiDung: string; provider?: 'auto' | 'gpt' | 'gemini' }) {
+export async function sendChatMessage(user: UserRef, conversationId: string, payload: {
+  noiDung: string;
+  provider?: 'auto' | 'gpt' | 'gemini';
+  hinhAnhBase64?: string;
+  boCanh?: Record<string, any>;
+}) {
   const conversation = await getConversationOrThrow(user.id, conversationId);
   const conversationData = safeObject(conversation.duLieuJson);
-  const lesson = await prisma.baiHoc.findUnique({ where: { id: String(conversationData.baiHocId || '') } });
-  if (!lesson) throw new HttpError(404, 'Khong tim thay bai hoc cua cuoc tro chuyen.');
+  const kind = String(conversationData.kind || 'lesson_1_1') as ConversationKind;
+  const lesson = conversationData.baiHocId
+    ? await prisma.baiHoc.findUnique({ where: { id: String(conversationData.baiHocId || '') } })
+    : null;
+  if (kind === 'lesson_1_1' && !lesson) throw new HttpError(404, 'Không tìm thấy bài học của cuộc trò chuyện.');
 
   const noiDung = normalizeText(payload.noiDung);
-  if (!noiDung) throw new HttpError(400, 'Tin nhan khong duoc de trong.');
+  if (!noiDung) throw new HttpError(400, 'Tin nhắn không được để trống.');
 
   const userMessage = await prisma.nhatKyHeThong.create({
     data: {
@@ -178,7 +226,11 @@ export async function sendChatMessage(user: UserRef, conversationId: string, pay
       hanhDong: 'message',
       doiTuong: conversationId,
       nguoiDungId: user.id,
-      duLieuJson: { vaiTro: 'user', noiDung } as any
+      duLieuJson: {
+        vaiTro: 'user',
+        noiDung,
+        hinhAnhBase64: payload.hinhAnhBase64 || null
+      } as any
     }
   });
 
@@ -192,29 +244,45 @@ export async function sendChatMessage(user: UserRef, conversationId: string, pay
     return { vaiTro: String(data.vaiTro || 'assistant'), noiDung: String(data.noiDung || '') };
   });
 
-  const aiResult = await runAI({
-    loaiTacVu: 'giai_bai',
-    provider: payload.provider ?? 'auto',
-    noiDung: buildChatPrompt({
-      lessonName: lesson.ten,
-      topic: lesson.chuDeThi,
-      history,
-      message: noiDung
-    }),
-    boCanh: {
-      lesson: lesson.ten,
-      topic: lesson.chuDeThi,
-      lessonSlug: lesson.slug,
-      chatMode: 'lesson_1_1',
-      latestMessage: noiDung
-    }
-  }, user.id);
+  const aiPayload = kind === 'lesson_1_1' && lesson
+    ? {
+        loaiTacVu: 'giai_bai',
+        provider: payload.provider ?? 'auto',
+        noiDung: buildChatPrompt({
+          lessonName: lesson.ten,
+          topic: lesson.chuDeThi,
+          history,
+          message: noiDung
+        }),
+        boCanh: {
+          lesson: lesson.ten,
+          topic: lesson.chuDeThi,
+          lessonSlug: lesson.slug,
+          chatMode: 'lesson_1_1',
+          latestMessage: noiDung,
+          ...(payload.boCanh || {})
+        }
+      }
+    : {
+        loaiTacVu: payload.hinhAnhBase64 ? 'giai_bai_tu_anh' : 'giai_bai',
+        provider: payload.provider ?? 'auto',
+        noiDung: payload.hinhAnhBase64 ? (noiDung || 'Phân tích giúp mình ảnh này.') : buildConsolePrompt({ history, message: noiDung }),
+        hinhAnhBase64: payload.hinhAnhBase64,
+        boCanh: {
+          chatMode: 'ai_console',
+          latestMessage: noiDung,
+          hasImage: Boolean(payload.hinhAnhBase64),
+          ...(payload.boCanh || {})
+        }
+      };
+
+  const aiResult = await runAI(aiPayload as any, user.id);
 
   const assistantText = String(
     aiResult?.du_lieu?.giai_thich ||
     (Array.isArray(aiResult?.du_lieu?.noi_dung_chinh) ? aiResult.du_lieu.noi_dung_chinh.join('\n') : '') ||
     aiResult?.du_lieu?.tom_tat ||
-    'Minh chua co cau tra loi phu hop, ban hoi lai giup minh nhe.'
+    'Mình chưa có câu trả lời phù hợp, bạn hỏi lại giúp mình nhé.'
   ).trim();
 
   const assistantMessage = await prisma.nhatKyHeThong.create({
@@ -238,17 +306,23 @@ export async function sendChatMessage(user: UserRef, conversationId: string, pay
     data: {
       duLieuJson: {
         ...conversationData,
-        tieuDe: conversationData.tieuDe || conversationTitle(lesson.ten, noiDung),
-        tomTat: noiDung.length > 140 ? `${noiDung.slice(0, 140).trim()}...` : noiDung
+        tieuDe: conversationData.tieuDe || conversationTitle(lesson?.ten, noiDung, kind),
+        tomTat: conversationSummary(lesson?.ten, noiDung, kind)
       } as any
     }
   });
 
-  await logSystem({ nhom: 'chat', hanhDong: 'send_message', doiTuong: conversationId, nguoiDungId: user.id, duLieuJson: { provider: aiResult.nha_cung_cap, userMessageId: userMessage.id, assistantMessageId: assistantMessage.id } });
+  await logSystem({
+    nhom: 'chat',
+    hanhDong: 'send_message',
+    doiTuong: conversationId,
+    nguoiDungId: user.id,
+    duLieuJson: { provider: aiResult.nha_cung_cap, userMessageId: userMessage.id, assistantMessageId: assistantMessage.id, kind }
+  });
 
   return {
     conversationId,
-    userMessage: { id: userMessage.id, vaiTro: 'user', noiDung, createdAt: userMessage.createdAt },
+    userMessage: { id: userMessage.id, vaiTro: 'user', noiDung, hinhAnhBase64: payload.hinhAnhBase64 || null, createdAt: userMessage.createdAt },
     assistantMessage: { id: assistantMessage.id, vaiTro: 'assistant', noiDung: assistantText, provider: aiResult.nha_cung_cap, createdAt: assistantMessage.createdAt },
     trace: aiResult.trace || null
   };

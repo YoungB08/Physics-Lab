@@ -25,6 +25,19 @@ const UNICODE_SUBSCRIPT_TO_DIGIT: Record<string, string> = {
   '\u2089': '9'
 };
 
+const UNICODE_SUPERSCRIPT_TO_DIGIT: Record<string, string> = {
+  '\u2070': '0',
+  '\u00B9': '1',
+  '\u00B2': '2',
+  '\u00B3': '3',
+  '\u2074': '4',
+  '\u2075': '5',
+  '\u2076': '6',
+  '\u2077': '7',
+  '\u2078': '8',
+  '\u2079': '9'
+};
+
 function escapeHtml(text: string) {
   return text
     .replace(/&/g, '&amp;')
@@ -35,9 +48,11 @@ function escapeHtml(text: string) {
 function normalizeMathSource(input: string) {
   return input
     .replace(/[\u2080-\u2089]/g, (char) => `_{${UNICODE_SUBSCRIPT_TO_DIGIT[char]}}`)
+    .replace(/[\u2070\u00B9\u00B2\u00B3\u2074-\u2079]/g, (char) => `^{${UNICODE_SUPERSCRIPT_TO_DIGIT[char]}}`)
     .replace(/([A-Za-z])([0-9]+)(?=\b|[A-Za-z])/g, '$1_{$2}')
     .replace(/([A-Za-z])\^([0-9]+)/g, '$1^{$2}')
     .replace(/\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g, '\\frac{$1}{$2}')
+    .replace(/\\dfrac/g, '\\frac')
     .replace(/\bpi\b/g, '\\pi')
     .replace(/\bsqrt\(([^()]+)\)/g, '\\sqrt{$1}')
     .replace(/\u2264/g, '\\leq ')
@@ -91,7 +106,7 @@ function katexNode(math: string, block: boolean, key: React.Key) {
 
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const regex = /(\*\*[^*]+\*\*)|(\*[^*]+\*)|(\\\([^)]*\\\))|(\$[^$]+\$)/g;
+  const regex = /(\*\*[^*]+\*\*)|(\*[^*]+\*)|(\\\([\s\S]*?\\\))|(\\\[[\s\S]*?\\\])|(\$\$[\s\S]*?\$\$)|(\$[^$]+\$)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let key = 0;
@@ -104,6 +119,10 @@ function renderInline(text: string): React.ReactNode[] {
     } else if (token.startsWith('*')) {
       parts.push(<em key={key++}>{token.slice(1, -1)}</em>);
     } else if (token.startsWith('\\(')) {
+      parts.push(katexNode(token.slice(2, -2), false, key++));
+    } else if (token.startsWith('\\[')) {
+      parts.push(katexNode(token.slice(2, -2), false, key++));
+    } else if (token.startsWith('$$')) {
       parts.push(katexNode(token.slice(2, -2), false, key++));
     } else if (token.startsWith('$')) {
       parts.push(katexNode(token.slice(1, -1), false, key++));

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { LoadingButton } from '../components/LoadingButton';
+import { appTitle, webAppConfig } from '../config/webAppConfig';
 
 export function DangNhapPage() {
   const navigate = useNavigate();
@@ -29,9 +30,9 @@ export function DangNhapPage() {
   return (
     <div className="auth-page">
       <div className="auth-panel login-panel">
-        <div className="brand-kicker">KNTech</div>
-        <div className="hero-title">Physics Lab</div>
-        <p className="muted">Đăng nhập để truy cập học liệu, mô phỏng 3D, KNTech AI, thi cử và khu quản trị. Tài khoản mẫu sau installer: root@kntech.vn / 123456 và admin@kntech.vn / 123456.</p>
+        <div className="brand-kicker">{webAppConfig.brandName}</div>
+        <div className="hero-title">{webAppConfig.productName}</div>
+        <p className="muted">Đăng nhập để truy cập học liệu, mô phỏng 3D, AI, thi cử và khu quản trị của {webAppConfig.systemName}. Tài khoản mẫu sau installer: root@kntech.site / 123456 và admin@kntech.site / 123456.</p>
         <div className="tab-row">
           <button className={isRegister ? 'tab' : 'tab active'} onClick={() => setIsRegister(false)}>Đăng nhập</button>
           <button className={isRegister ? 'tab active' : 'tab'} onClick={() => setIsRegister(true)}>Đăng ký</button>
@@ -50,7 +51,7 @@ export function DangNhapPage() {
         )}
         {error && <div className="error-box">{error}</div>}
         <LoadingButton className="full" onClick={submit} loading={loading} loadingText={isRegister ? 'Đang tạo tài khoản...' : 'Đang đăng nhập...'}>
-          {isRegister ? 'Tạo tài khoản KNTech' : 'Vào hệ thống'}
+          {isRegister ? appTitle('Tạo tài khoản', webAppConfig.brandName) : 'Vào hệ thống'}
         </LoadingButton>
       </div>
     </div>
