@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { LoadingButton } from '../components/LoadingButton';
+import { resolveWebAppUrl } from '../config/webAppConfig';
 
 function defaultOptionKey(index: number) {
   return String.fromCharCode(65 + index);
@@ -635,9 +636,13 @@ export function TaoDePageClean() {
               {draft.canShowQr && (
                 <div className="note-box" style={{ textAlign: 'center', padding: 20 }}>
                   <strong>Học sinh quét QR để vào thi</strong>
+                  {(() => {
+                    const publicExamUrl = resolveWebAppUrl(draft.examAccessUrl);
+                    return (
+                      <>
                   <div style={{ margin: '12px auto', display: 'inline-block' }}>
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin + draft.examAccessUrl)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicExamUrl)}`}
                       alt="QR phòng thi"
                       width={180}
                       height={180}
@@ -646,8 +651,11 @@ export function TaoDePageClean() {
                   </div>
                   <div className="qr-token-box">{draft.qrToken}</div>
                   <Link to={draft.examAccessUrl} style={{ display: 'block', marginTop: 8, color: '#2563eb' }}>
-                    {window.location.origin}{draft.examAccessUrl}
+                    {publicExamUrl}
                   </Link>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 

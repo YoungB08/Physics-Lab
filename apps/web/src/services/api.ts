@@ -1,9 +1,19 @@
 import { useAuthStore } from '../store/authStore';
 
+function readEnv(key: string, fallback = '') {
+  const value = (import.meta as any)?.env?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function trimTrailingSlash(value: string) {
+  return String(value || '').replace(/\/+$/, '');
+}
+
 function resolveApiBase() {
-  const fromEnv = (import.meta as any)?.env?.VITE_API_BASE;
-  if (typeof fromEnv === 'string' && fromEnv.trim()) return fromEnv.trim().replace(/\/$/, '');
-  return 'http://localhost:4000';
+  const mode = readEnv('CHE_DO', 'development').toLowerCase();
+  const localApiBase = trimTrailingSlash(readEnv('URL_API', 'http://localhost:4000'));
+  const webApiBase = trimTrailingSlash(readEnv('URL_API_WEB', 'https://api.kntech.site'));
+  return mode === 'web' ? webApiBase : localApiBase;
 }
 
 const API_BASE = resolveApiBase();

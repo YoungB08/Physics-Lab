@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 export const app = express();
-app.use(cors({ origin: env.URL_GIAO_DIEN }));
+app.use(cors({ origin: env.PUBLIC_WEB_URL }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir));
@@ -55,7 +55,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     filename: req.file?.filename,
     originalname: req.file?.originalname,
     size: req.file?.size ?? 0,
-    url: req.file ? `${env.URL_API.replace(/\/$/, '')}/uploads/${req.file.filename}` : null
+    url: req.file ? `${env.PUBLIC_API_URL}/uploads/${req.file.filename}` : null
   });
 });
 app.use('/api', routes);

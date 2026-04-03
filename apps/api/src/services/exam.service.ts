@@ -648,14 +648,18 @@ function appendTeacherFlag(detail: any, flag: { type: string; message: string; a
   return next.slice(-20);
 }
 
-function sanitizeAttemptForStudent(attempt: any) {
+function sanitizeAttemptForStudent(attempt: any, cfg?: ExamConfig) {
   const detail = attemptDetail(attempt?.chiTietJson);
-  const safeStudentResult = detail.studentResult ? {
-    score: detail.studentResult.score ?? attempt?.diem ?? 0,
-    answered: detail.studentResult.answered ?? Object.keys(detail.answers ?? {}).length,
-    total: detail.studentResult.total ?? detail.total ?? 0,
-    hideResultDetails: Boolean(detail.studentResult.hideResultDetails ?? false),
-    details: Array.isArray(detail.studentResult.details) ? detail.studentResult.details : []
+  const shouldHideResultDetails = Boolean(cfg?.hideResultDetails ?? detail.studentResult?.hideResultDetails ?? false);
+  const storedDetails = Array.isArray(detail.studentResult?.details) ? detail.studentResult.details : [];
+  const teacherOnlyDetails = Array.isArray(detail.gradedTeacherOnly) ? detail.gradedTeacherOnly : [];
+  const visibleDetails = shouldHideResultDetails ? [] : (storedDetails.length ? storedDetails : teacherOnlyDetails);
+  const safeStudentResult = detail.studentResult || teacherOnlyDetails.length ? {
+    score: detail.studentResult?.score ?? attempt?.diem ?? 0,
+    answered: detail.studentResult?.answered ?? Object.keys(detail.answers ?? {}).length,
+    total: detail.studentResult?.total ?? detail.total ?? teacherOnlyDetails.length,
+    hideResultDetails: shouldHideResultDetails,
+    details: visibleDetails
   } : undefined;
 
   return {
@@ -814,7 +818,7 @@ async function finalizeAttemptSubmission(attempt: any, cfg: ExamConfig, detail: 
       } as any
     }
   });
-  return sanitizeAttemptForStudent(updated);
+  return sanitizeAttemptForStudent(updated, cfg);
 }
 
 
@@ -1363,7 +1367,7 @@ export async function submitAttempt(user: { id: string }, attemptId: string) {
   if (!attempt || attempt.hocSinhId !== user.id) throw new HttpError(403, 'Không có quyền nộp bài.');
   const cfg = examConfig(attempt.deThi.cauHinhJson);
   const detail = attemptDetail(attempt.chiTietJson);
-  if (detail.status === 'SUBMITTED') return sanitizeAttemptForStudent(attempt);
+  if (detail.status === 'SUBMITTED') return sanitizeAttemptForStudent(attempt, cfg);
   const updated = await finalizeAttemptSubmission(attempt, cfg, detail);
   await logSystem({ nhom: 'exam', hanhDong: 'submit_attempt', doiTuong: attempt.deThiId, nguoiDungId: user.id, duLieuJson: { attemptId, diem: updated.diem } });
   return updated;

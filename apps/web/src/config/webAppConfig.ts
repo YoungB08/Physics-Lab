@@ -11,6 +11,20 @@ function readBool(key: string, fallback: boolean) {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
+function trimTrailingSlash(value: string) {
+  return String(value || '').replace(/\/+$/, '');
+}
+
+function resolveMode() {
+  const mode = readEnv('CHE_DO', 'development').toLowerCase();
+  return mode === 'web' ? 'web' : 'development';
+}
+
+const deploymentMode = resolveMode();
+const localAppUrl = trimTrailingSlash(readEnv('URL_GIAO_DIEN', 'http://localhost:5173'));
+const webModeAppUrl = trimTrailingSlash(readEnv('URL_GIAO_DIEN_WEB', 'https://kntech.site'));
+const publicAppUrl = deploymentMode === 'web' ? webModeAppUrl : localAppUrl;
+
 const brandName = readEnv('VITE_APP_BRAND', 'KNTech');
 const productName = readEnv('VITE_APP_PRODUCT', 'Physics Lab');
 const supportEmail = readEnv('VITE_SUPPORT_EMAIL', 'support@kntech.site');
@@ -32,6 +46,8 @@ export const webAppConfig = {
   aiConsoleConsentBody: readEnv('VITE_AI_CONSOLE_CONSENT_BODY', `Nếu bạn đồng ý, nội dung chat và dữ liệu đính kèm có thể được dùng để cải thiện kho dữ liệu và chất lượng trả lời của ${brandName}.`),
   aiConsoleConsentAcceptedNote: readEnv('VITE_AI_CONSOLE_CONSENT_ACCEPTED_NOTE', `Bạn đã đồng ý cho ${brandName} sử dụng dữ liệu chat để phục vụ kho dữ liệu nội bộ.`),
   aiConsoleSnoozeLabel: readEnv('VITE_AI_CONSOLE_SNOOZE_LABEL', 'Không hỏi lại sau 1 giờ'),
+  deploymentMode,
+  publicAppUrl,
   showInstaller: readBool('VITE_ENABLE_INSTALLER', true),
   features: {
     aiConsole: readBool('VITE_ENABLE_AI_CONSOLE', true),
@@ -42,4 +58,12 @@ export const webAppConfig = {
 
 export function appTitle(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
+}
+
+export function resolveWebAppUrl(path = '') {
+  const configuredBase = webAppConfig.publicAppUrl;
+  const browserBase = typeof window !== 'undefined' ? trimTrailingSlash(window.location.origin) : '';
+  const base = configuredBase || browserBase;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return base ? `${base}${normalizedPath}` : normalizedPath;
 }

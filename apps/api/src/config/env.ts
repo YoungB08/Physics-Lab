@@ -20,6 +20,8 @@ const schema = z.object({
   CONG_API: z.coerce.number().default(4000),
   URL_API: z.string().default('http://localhost:4000'),
   URL_GIAO_DIEN: z.string().default('http://localhost:5173'),
+  URL_API_WEB: z.string().default('https://api.kntech.site'),
+  URL_GIAO_DIEN_WEB: z.string().default('https://kntech.site'),
   DATABASE_URL: z.string().default('mysql://root:root@localhost:3306/vatly_thpt'),
   DATABASE_URL_WEB: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().default('doi_secret_nay'),
@@ -42,12 +44,16 @@ const parsed = schema.parse(process.env);
 const databaseUrl = parsed.CHE_DO === 'web' && parsed.DATABASE_URL_WEB?.trim()
   ? parsed.DATABASE_URL_WEB.trim()
   : parsed.DATABASE_URL.trim();
+const publicApiUrl = (parsed.CHE_DO === 'web' ? parsed.URL_API_WEB : parsed.URL_API).trim().replace(/\/+$/, '');
+const publicWebUrl = (parsed.CHE_DO === 'web' ? parsed.URL_GIAO_DIEN_WEB : parsed.URL_GIAO_DIEN).trim().replace(/\/+$/, '');
 
 process.env.DATABASE_URL = databaseUrl;
 
 export const env = {
   ...parsed,
   DATABASE_URL: databaseUrl,
+  PUBLIC_API_URL: publicApiUrl,
+  PUBLIC_WEB_URL: publicWebUrl,
   OPENAI_API_KEY: (parsed.OPENAI_API_KEY || parsed.OPENAI_API_KEY_ALT || process.env.OPENAI_APIKEY || '').trim() || undefined,
   GEMINI_API_KEY: (parsed.GEMINI_API_KEY || parsed.GOOGLE_API_KEY || '').trim() || undefined
 };
