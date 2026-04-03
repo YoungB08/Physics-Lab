@@ -33,6 +33,45 @@ export function PhongThiPageClean() {
   const warningCount = Number(room?.attempt?.chiTietJson?.warningCount ?? submitted?.chiTietJson?.warningCount ?? 0);
   const maxTabOut = Number(room?.exam?.antiCheat?.maxTabSwitch ?? 3);
 
+  async function handleAntiCheatWarn(trigger: string) {
+    if (!room?.attempt?.id || submitted || !antiCheatEnabled) return;
+    if (antiCheatRequestRef.current) return;
+    const now = Date.now();
+    if (now - lastTabOutRef.current < 1200) return;
+    lastTabOutRef.current = now;
+    antiCheatRequestRef.current = true;
+    try {
+      const result = await api.tabOut(room.attempt.id);
+      const count = Number(result.tabSwitchCount ?? 0);
+      const max = Number(result.maxTabSwitch ?? room?.exam?.antiCheat?.maxTabSwitch ?? 3);
+      if (result.forced) {
+        if (result.attempt) {
+          setSubmitted(result.attempt);
+          setRoom((prev: any) => prev ? ({ ...prev, attempt: result.attempt }) : prev);
+          setWarning(result.reason || `Hệ thống đã tự nộp bài do tab out lần ${count}.`);
+        } else {
+          setError(result.reason || 'Hệ thống đã khóa bài làm.');
+        }
+      } else {
+        const warningIndex = Math.min(count, 2);
+        setWarning(`Cảnh báo anti-cheat lần ${warningIndex}/2: bạn đã tab out ${count}/${max} lần (${trigger}). Lần thứ ${max} hệ thống sẽ tự nộp bài.`);
+        setRoom((prev: any) => prev ? ({
+          ...prev,
+          attempt: {
+            ...prev.attempt,
+            chiTietJson: {
+              ...(prev.attempt?.chiTietJson || {}),
+              tabSwitchCount: count,
+              warningCount: warningIndex
+            }
+          }
+        }) : prev);
+      }
+    } catch {} finally {
+      antiCheatRequestRef.current = false;
+    }
+  }
+
   async function pushIntegrity(type: string, detail?: string) {
     if (!room?.attempt?.id || submitted || integrityLockRef.current || !antiCheatEnabled) return;
     try {
@@ -95,55 +134,16 @@ export function PhongThiPageClean() {
   }, [submitted]);
 
   useEffect(() => {
-    async function handleTabOut(trigger: string) {
-      if (!room?.attempt?.id || submitted || !antiCheatEnabled) return;
-      if (antiCheatRequestRef.current) return;
-      const now = Date.now();
-      if (now - lastTabOutRef.current < 1200) return;
-      lastTabOutRef.current = now;
-      antiCheatRequestRef.current = true;
-      try {
-        const result = await api.tabOut(room.attempt.id);
-        const count = Number(result.tabSwitchCount ?? 0);
-        const max = Number(result.maxTabSwitch ?? room?.exam?.antiCheat?.maxTabSwitch ?? 3);
-        if (result.forced) {
-          if (result.attempt) {
-            setSubmitted(result.attempt);
-            setRoom((prev: any) => prev ? ({ ...prev, attempt: result.attempt }) : prev);
-            setWarning(result.reason || `Hệ thống đã tự nộp bài do tab out lần ${count}.`);
-          } else {
-            setError(result.reason || 'Hệ thống đã khóa bài làm.');
-          }
-        } else {
-          const warningIndex = Math.min(count, 2);
-          setWarning(`Cảnh báo anti-cheat lần ${warningIndex}/2: bạn đã tab out ${count}/${max} lần (${trigger}). Lần thứ ${max} hệ thống sẽ tự nộp bài.`);
-          setRoom((prev: any) => prev ? ({
-            ...prev,
-            attempt: {
-              ...prev.attempt,
-              chiTietJson: {
-                ...(prev.attempt?.chiTietJson || {}),
-                tabSwitchCount: count,
-                warningCount: warningIndex
-              }
-            }
-          }) : prev);
-        }
-      } catch {} finally {
-        antiCheatRequestRef.current = false;
-      }
-    }
-
     const visibilityHandler = async () => {
       if (!document.hidden) return;
-      await handleTabOut('ẩn tab');
+      await handleAntiCheatWarn('ẩn tab');
     };
     const blurHandler = async () => {
       if (document.hidden) return;
-      await handleTabOut('mất focus');
+      await handleAntiCheatWarn('mất focus');
     };
     const pageHideHandler = async () => {
-      await handleTabOut('rời trang');
+      await handleAntiCheatWarn('rời trang');
     };
 
     document.addEventListener('visibilitychange', visibilityHandler);
@@ -191,10 +191,12 @@ export function PhongThiPageClean() {
       e.preventDefault();
       e.returnValue = 'Bạn đang trong phòng thi KNTech.';
     };
-    const onFullscreen = () => {
+    const onFullscreen = async () => {
       const ok = Boolean(document.fullscreenElement);
       setFullscreenOk(ok);
-      if (!ok && room?.exam?.antiCheat?.fullScreenRequired) pushIntegrity('fullscreen-exit');
+      if (!ok && room?.exam?.antiCheat?.fullScreenRequired) {
+        await handleAntiCheatWarn('thoát fullscreen');
+      }
     };
 
     document.addEventListener('copy', block);

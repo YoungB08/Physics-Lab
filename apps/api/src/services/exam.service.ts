@@ -80,6 +80,14 @@ function normalizeWhitespace(value: string) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function examStemFingerprint(value: unknown) {
+  return normalizeWhitespace(
+    asciiText(String(value ?? ''))
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+  );
+}
+
 function normalizeLatexishText(value: string) {
   return normalizeWhitespace(String(value || ''))
     .replace(/\\pi/g, '\u03c0')
@@ -588,6 +596,42 @@ function attemptDetail(value: any) {
   return (value && typeof value === 'object' ? value : {}) as any;
 }
 
+async function getTeacherExamUniquenessContext(input: { giaoVienId: string; lop: number; baiHocId?: string | null }) {
+  const previousExams = await prisma.deThi.findMany({
+    where: {
+      giaoVienId: input.giaoVienId,
+      lop: input.lop
+    },
+    select: {
+      id: true,
+      cauHinhJson: true
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 40
+  });
+
+  const usedQuestionIds = new Set<string>();
+  const usedStemFingerprints = new Set<string>();
+
+  previousExams.forEach((exam: any) => {
+    const cfg = examConfig(exam.cauHinhJson);
+    const examLessonId = cfg.baiHoc?.id ? String(cfg.baiHoc.id) : null;
+    if (input.baiHocId && examLessonId && examLessonId !== input.baiHocId) return;
+
+    (cfg.danhSachCauHoi ?? []).forEach((id: string) => {
+      if (id) usedQuestionIds.add(String(id));
+    });
+
+    sanitizeQuestionSnapshots(cfg.questionSnapshots).forEach((snapshot) => {
+      const fingerprint = examStemFingerprint(snapshot.noiDung);
+      if (fingerprint) usedStemFingerprints.add(fingerprint);
+      if (snapshot.sourceQuestionId) usedQuestionIds.add(String(snapshot.sourceQuestionId));
+    });
+  });
+
+  return { usedQuestionIds, usedStemFingerprints };
+}
+
 function teacherFlags(detail: any) {
   return Array.isArray(detail?.teacherFlags) ? detail.teacherFlags : [];
 }
@@ -841,6 +885,12 @@ export async function taoDeThi(payload: {
   const lessonBySlug = payload.baiHocSlug ? await prisma.baiHoc.findUnique({ where: { slug: payload.baiHocSlug } }) : null;
   const baiHoc = lessonBySlug ?? await prisma.baiHoc.findFirst({ where: { chuong: { lop: payload.lop } }, orderBy: [{ chuong: { thuTu: 'asc' } }, { thuTu: 'asc' }] });
   let selectedQuestions: any[] = [];
+  const uniqueness = await getTeacherExamUniquenessContext({
+    giaoVienId: payload.giaoVienId,
+    lop: payload.lop,
+    baiHocId: baiHoc?.id ?? null
+  });
+  const selectedFingerprints = new Set<string>();
 
   const limitSetting = await prisma.cauHinhHeThong.findUnique({ where: { ma: 'limit.exam_questions' } }).catch(() => null);
   const maxQuestions = Number(limitSetting?.giaTri ?? 50);
@@ -873,7 +923,8 @@ export async function taoDeThi(payload: {
     const bankPool = await prisma.cauHoi.findMany({
       where: {
         trangThaiDuyet: 'DA_DUYET',
-        ...(baiHoc ? { baiHocId: baiHoc.id } : {})
+        ...(baiHoc ? { baiHocId: baiHoc.id } : {}),
+        ...(uniqueness.usedQuestionIds.size ? { id: { notIn: Array.from(uniqueness.usedQuestionIds) } } : {})
       },
       orderBy: [
         { soLanSuDung: 'asc' },
@@ -890,8 +941,11 @@ export async function taoDeThi(payload: {
     const pushFromLevel = (level: 'DE' | 'TRUNG_BINH' | 'KHO', count: number) => {
       for (const item of byLevel[level]) {
         if (pickedIds.has(item.id)) continue;
+        const fingerprint = examStemFingerprint(item.noiDung);
+        if (fingerprint && (uniqueness.usedStemFingerprints.has(fingerprint) || selectedFingerprints.has(fingerprint))) continue;
         selectedQuestions.push(item);
         pickedIds.add(item.id);
+        if (fingerprint) selectedFingerprints.add(fingerprint);
         if (selectedQuestions.length >= target || selectedQuestions.filter((question) => question.mucDo === level).length >= count) break;
       }
     };
@@ -901,60 +955,87 @@ export async function taoDeThi(payload: {
     for (const item of [...byLevel.KHO, ...byLevel.TRUNG_BINH, ...byLevel.DE]) {
       if (selectedQuestions.length >= target) break;
       if (pickedIds.has(item.id)) continue;
+      const fingerprint = examStemFingerprint(item.noiDung);
+      if (fingerprint && (uniqueness.usedStemFingerprints.has(fingerprint) || selectedFingerprints.has(fingerprint))) continue;
       selectedQuestions.push(item);
       pickedIds.add(item.id);
+      if (fingerprint) selectedFingerprints.add(fingerprint);
     }
   }
 
   if (selectedQuestions.length < target && payload.cheDo !== 'NGAN_HANG') {
-    const remain = target - selectedQuestions.length;
     const topic = normalizeWhitespace(baiHoc?.ten ?? `Vật lý lớp ${payload.lop}`);
     const yeuCauThem = normalizeWhitespace(payload.yeuCauThem || '');
-    const minCalculation = payload.uuTienVanDung ? Math.max(1, Math.ceil(remain * 0.3)) : (payload.mucDo !== 'DE' ? 1 : 0);
-    const minAdvanced = payload.uuTienVanDungCao ? Math.max(1, Math.ceil(remain * 0.2)) : (payload.mucDo === 'KHO' ? Math.max(1, Math.ceil(remain * 0.3)) : 0);
-    const promptPieces = [
-      `Tạo ${remain} câu hỏi ${payload.mucDo} cho chủ đề ${topic}.`,
-      payload.uuTienLyThuyet ? 'Phải có các câu lý thuyết rõ bản chất, diễn đạt chặt chẽ, không mơ hồ.' : '',
-      payload.uuTienVanDung ? 'Phải có câu bài tập vận dụng dựa trên dữ kiện cụ thể hoặc tình huống áp dụng.' : '',
-      payload.uuTienVanDungCao ? 'Phải có ít nhất một số câu vận dụng cao, cần suy luận nhiều bước hoặc kết hợp điều kiện.' : '',
-      minCalculation ? `Ít nhất ${minCalculation} câu phải là câu tính toán hoặc suy luận trực tiếp từ số liệu.` : '',
-      minAdvanced ? `Ít nhất ${minAdvanced} câu phải ở mức khó hoặc có lời giải nhiều bước.` : '',
-      yeuCauThem ? `Yêu cầu thêm của giáo viên: ${yeuCauThem}` : ''
-    ].filter(Boolean).join(' ');
-    const aiResult = await runAI({
-      loaiTacVu: 'tao_cau_hoi',
-      provider: payload.providerAI ?? 'auto',
-      noiDung: promptPieces,
-      boCanh: {
-        lop: payload.lop,
-        baiHocSlug: baiHoc?.slug,
-        baiHocTen: baiHoc?.ten,
-        soLuong: remain,
-        mucDo: payload.mucDo,
-        yeuCauThem,
-        uuTienLyThuyet: Boolean(payload.uuTienLyThuyet),
-        uuTienVanDung: Boolean(payload.uuTienVanDung),
-        uuTienVanDungCao: Boolean(payload.uuTienVanDungCao)
-      }
-    }, payload.giaoVienId);
+    let generationRounds = 0;
+    while (selectedQuestions.length < target && generationRounds < 3) {
+      generationRounds += 1;
+      const remain = target - selectedQuestions.length;
+      const requestCount = Math.max(remain + 2, remain);
+      const minCalculation = payload.uuTienVanDung ? Math.max(1, Math.ceil(remain * 0.3)) : (payload.mucDo !== 'DE' ? 1 : 0);
+      const minAdvanced = payload.uuTienVanDungCao ? Math.max(1, Math.ceil(remain * 0.2)) : (payload.mucDo === 'KHO' ? Math.max(1, Math.ceil(remain * 0.3)) : 0);
+      const excludedStems = Array.from(new Set([
+        ...Array.from(uniqueness.usedStemFingerprints),
+        ...Array.from(selectedFingerprints)
+      ])).slice(0, 24);
+      const promptPieces = [
+        `Tạo ${requestCount} câu hỏi ${payload.mucDo} cho chủ đề ${topic}.`,
+        'Mỗi câu phải khác rõ ràng với các đề đã tạo trước, không lặp lại câu hỏi cũ dưới bất kỳ cách diễn đạt gần giống nào.',
+        excludedStems.length ? `Tuyệt đối tránh các fingerprint nội dung gần với danh sách cũ: ${excludedStems.join(' | ')}.` : '',
+        payload.uuTienLyThuyet ? 'Phải có các câu lý thuyết rõ bản chất, diễn đạt chặt chẽ, không mơ hồ.' : '',
+        payload.uuTienVanDung ? 'Phải có câu bài tập vận dụng dựa trên dữ kiện cụ thể hoặc tình huống áp dụng.' : '',
+        payload.uuTienVanDungCao ? 'Phải có ít nhất một số câu vận dụng cao, cần suy luận nhiều bước hoặc kết hợp điều kiện.' : '',
+        minCalculation ? `Ít nhất ${minCalculation} câu phải là câu tính toán hoặc suy luận trực tiếp từ số liệu.` : '',
+        minAdvanced ? `Ít nhất ${minAdvanced} câu phải ở mức khó hoặc có lời giải nhiều bước.` : '',
+        yeuCauThem ? `Yêu cầu thêm của giáo viên: ${yeuCauThem}` : ''
+      ].filter(Boolean).join(' ');
+      const aiResult = await runAI({
+        loaiTacVu: 'tao_cau_hoi',
+        provider: payload.providerAI ?? 'auto',
+        noiDung: promptPieces,
+        boCanh: {
+          lop: payload.lop,
+          baiHocSlug: baiHoc?.slug,
+          baiHocTen: baiHoc?.ten,
+          soLuong: requestCount,
+          mucDo: payload.mucDo,
+          yeuCauThem,
+          uuTienLyThuyet: Boolean(payload.uuTienLyThuyet),
+          uuTienVanDung: Boolean(payload.uuTienVanDung),
+          uuTienVanDungCao: Boolean(payload.uuTienVanDungCao),
+          excludedStemFingerprints: excludedStems
+        }
+      }, payload.giaoVienId);
 
-    const generatedDrafts = extractStructuredAiQuestions(aiResult, remain, topic, payload.mucDo);
-    const generated = generatedDrafts.map((question) => ({
-      baiHocId: baiHoc?.id,
-      nguon: aiResult.nha_cung_cap === 'gemini' ? 'AI_GEMINI' : 'AI_GPT',
-      mucDo: question.mucDo || payload.mucDo,
-      loai: question.loai || 'MOT_DAP_AN',
-      noiDung: question.noiDung,
-      luaChonJson: question.luaChonJson,
-      dapAnDungJson: question.dapAnDungJson,
-      giaiThich: question.giaiThich,
-      trangThaiDuyet: 'CHO_DUYET'
-    }));
+      const generatedDrafts = extractStructuredAiQuestions(aiResult, requestCount, topic, payload.mucDo);
+      const generated = generatedDrafts
+        .filter((question) => {
+          const fingerprint = examStemFingerprint(question.noiDung);
+          if (!fingerprint) return false;
+          if (uniqueness.usedStemFingerprints.has(fingerprint)) return false;
+          if (selectedFingerprints.has(fingerprint)) return false;
+          selectedFingerprints.add(fingerprint);
+          return true;
+        })
+        .slice(0, remain)
+        .map((question) => ({
+          baiHocId: baiHoc?.id,
+          nguon: aiResult.nha_cung_cap === 'gemini' ? 'AI_GEMINI' : 'AI_GPT',
+          mucDo: question.mucDo || payload.mucDo,
+          loai: question.loai || 'MOT_DAP_AN',
+          noiDung: question.noiDung,
+          luaChonJson: question.luaChonJson,
+          dapAnDungJson: question.dapAnDungJson,
+          giaiThich: question.giaiThich,
+          trangThaiDuyet: 'CHO_DUYET'
+        }));
 
-    for (const q of generated) {
-      if (q.baiHocId) {
-        const created = await prisma.cauHoi.create({ data: q as any });
-        selectedQuestions.push(created);
+      for (const q of generated) {
+        if (q.baiHocId && selectedQuestions.length < target) {
+          const created = await prisma.cauHoi.create({ data: q as any });
+          selectedQuestions.push(created);
+          uniqueness.usedStemFingerprints.add(examStemFingerprint(q.noiDung));
+          uniqueness.usedQuestionIds.add(created.id);
+        }
       }
     }
   }
