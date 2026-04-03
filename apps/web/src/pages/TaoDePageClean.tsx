@@ -171,6 +171,7 @@ export function TaoDePageClean() {
   });
   const [creating, setCreating] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [actionLoading, setActionLoading] = useState<null | 'start' | 'stop' | 'lock' | 'delete'>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState('');
@@ -246,10 +247,11 @@ export function TaoDePageClean() {
     }
   }
 
-  async function handleSaveAndConfirm() {
+  async function saveExamChanges(confirmAfterSave = false) {
     if (!draft) return;
     setError('');
-    setConfirming(true);
+    if (confirmAfterSave) setConfirming(true);
+    else setSavingDraft(true);
     try {
       await api.updateExam(draft.id, {
         ten: draft.ten,
@@ -270,16 +272,23 @@ export function TaoDePageClean() {
           explanation: q.giaiThich
         }))
       });
-      await api.examAction(draft.id, 'confirm');
+      if (confirmAfterSave && draft.status === 'DRAFT') {
+        await api.examAction(draft.id, 'confirm');
+      }
       const detail = await api.examDetail(draft.id);
       setDraft(mapToDraft(detail));
-      setStep('running');
+      setStep(confirmAfterSave && draft.status === 'DRAFT' ? 'running' : (detail.status === 'DRAFT' ? 'edit' : 'running'));
       await refreshExams(draft.id);
     } catch (e: any) {
       setError(cleanText(e?.message, 'Không lưu được đề thi.'));
     } finally {
       setConfirming(false);
+      setSavingDraft(false);
     }
+  }
+
+  async function handleSaveAndConfirm() {
+    await saveExamChanges(true);
   }
 
   async function handleAction(action: 'start' | 'stop' | 'lock' | 'delete') {
@@ -327,6 +336,8 @@ export function TaoDePageClean() {
     setDraft(mapToDraft(detail));
     setStep(detail.status === 'DRAFT' ? 'edit' : 'running');
   }
+
+  const canEditExamConfig = Boolean(draft && draft.status !== 'STARTED' && draft.status !== 'LOCKED');
 
   return (
     <div className="stack">
@@ -472,6 +483,16 @@ export function TaoDePageClean() {
               </div>
 
               <div className="exam-action-row">
+                {draft.status !== 'STARTED' && draft.status !== 'LOCKED' && (
+                  <LoadingButton
+                    className="button-secondary"
+                    onClick={() => saveExamChanges(false)}
+                    loading={savingDraft}
+                    loadingText="Đang lưu chỉnh sửa..."
+                  >
+                    Lưu chỉnh sửa
+                  </LoadingButton>
+                )}
                 {draft.status === 'DRAFT' && (
                   <LoadingButton onClick={handleSaveAndConfirm} loading={confirming} loadingText="Đang lưu và xác nhận...">
                     Lưu và xác nhận
@@ -527,6 +548,90 @@ export function TaoDePageClean() {
                 </LoadingButton>
               </div>
 
+              {draft && (
+                <div className="card stack" style={{ padding: 16 }}>
+                  <div className="row-between wrap-mobile">
+                    <div>
+                      <h4>Cấu hình đề</h4>
+                      <div className="muted">Có thể chỉnh trước khi đề bắt đầu hoặc bị khóa.</div>
+                    </div>
+                    <span className="badge badge-soft">{canEditExamConfig ? 'Đang cho phép chỉnh' : 'Đã khóa chỉnh sửa'}</span>
+                  </div>
+
+                  <div className="exam-create-row exam-create-row--toggles">
+                    <label className="toggle-chip">
+                      <input
+                        type="checkbox"
+                        checked={draft.antiCheat.enabled}
+                        disabled={!canEditExamConfig}
+                        onChange={(e) => setDraft((prev) => prev ? {
+                          ...prev,
+                          antiCheat: {
+                            ...prev.antiCheat,
+                            enabled: e.target.checked,
+                            fullScreenRequired: e.target.checked ? prev.antiCheat.fullScreenRequired : false,
+                            strictAntiCheat: e.target.checked ? prev.antiCheat.strictAntiCheat : false
+                          }
+                        } : prev)}
+                      />
+                      <span>Bật anti-cheat</span>
+                    </label>
+
+                    <label className="toggle-chip">
+                      <input
+                        type="checkbox"
+                        checked={draft.antiCheat.daoCauHoi}
+                        disabled={!canEditExamConfig}
+                        onChange={(e) => setDraft((prev) => prev ? {
+                          ...prev,
+                          antiCheat: { ...prev.antiCheat, daoCauHoi: e.target.checked }
+                        } : prev)}
+                      />
+                      <span>Đảo câu hỏi</span>
+                    </label>
+
+                    <label className="toggle-chip">
+                      <input
+                        type="checkbox"
+                        checked={draft.antiCheat.fullScreenRequired}
+                        disabled={!canEditExamConfig || !draft.antiCheat.enabled}
+                        onChange={(e) => setDraft((prev) => prev ? {
+                          ...prev,
+                          antiCheat: { ...prev.antiCheat, fullScreenRequired: e.target.checked }
+                        } : prev)}
+                      />
+                      <span>Bắt fullscreen</span>
+                    </label>
+
+                    <label className="toggle-chip">
+                      <input
+                        type="checkbox"
+                        checked={draft.antiCheat.strictAntiCheat}
+                        disabled={!canEditExamConfig || !draft.antiCheat.enabled}
+                        onChange={(e) => setDraft((prev) => prev ? {
+                          ...prev,
+                          antiCheat: { ...prev.antiCheat, strictAntiCheat: e.target.checked }
+                        } : prev)}
+                      />
+                      <span>Chống gian lận chặt</span>
+                    </label>
+
+                    <label className="toggle-chip">
+                      <input
+                        type="checkbox"
+                        checked={draft.antiCheat.hideResultDetails}
+                        disabled={!canEditExamConfig}
+                        onChange={(e) => setDraft((prev) => prev ? {
+                          ...prev,
+                          antiCheat: { ...prev.antiCheat, hideResultDetails: e.target.checked }
+                        } : prev)}
+                      />
+                      <span>Ẩn đáp án sau thi</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {draft.canShowQr && (
                 <div className="note-box" style={{ textAlign: 'center', padding: 20 }}>
                   <strong>Học sinh quét QR để vào thi</strong>
@@ -546,13 +651,13 @@ export function TaoDePageClean() {
                 </div>
               )}
 
-              {draft.status === 'DRAFT' && (
+              {draft.status !== 'STARTED' && draft.status !== 'LOCKED' && (
                 <div className="stack">
                   <div className="row-between wrap-mobile">
                     <h4>Chỉnh sửa câu hỏi</h4>
-                    <span className="badge badge-variant-1">{draft.questions.length} câu do AI sinh</span>
+                    <span className="badge badge-variant-1">{draft.questions.length} câu có thể chỉnh sửa</span>
                   </div>
-                  <div className="note-box">Sửa nội dung câu hỏi, các đáp án và lời giải trước khi xác nhận đề.</div>
+                  <div className="note-box">Sửa nội dung câu hỏi, các đáp án và lời giải trước khi mở đề. Option giờ có thể chỉnh trực tiếp trong mục edit đề.</div>
 
                   {draft.questions.map((q, qi) => (
                     <div key={q.id} className="exam-question-editor card">
@@ -590,7 +695,7 @@ export function TaoDePageClean() {
                 </div>
               )}
 
-              {draft.status !== 'DRAFT' && (
+              {draft.status === 'STARTED' || draft.status === 'LOCKED' ? (
                 <div className="table-wrap">
                   <table className="table compact-table">
                     <thead>
@@ -609,7 +714,7 @@ export function TaoDePageClean() {
                     </tbody>
                   </table>
                 </div>
-              )}
+              ) : null}
 
               <div className="stack">
                 <div className="row-between wrap-mobile">
