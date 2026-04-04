@@ -1,7 +1,7 @@
 ﻿import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
-import { BookOpen, Brain, Home, PlusCircle, Shield, Database, LogOut, Sparkles, ChevronDown, FileText, Copyright, MessagesSquare } from 'lucide-react';
+import { BookOpen, Brain, Home, PlusCircle, Shield, Database, LogOut, Sparkles, ChevronDown, FileText, Copyright, MessagesSquare, ExternalLink } from 'lucide-react';
 import { Avatar } from '../components/Avatar';
 import { Footer } from '../components/Footer';
 import { appTitle, webAppConfig } from '../config/webAppConfig';
@@ -35,6 +35,9 @@ export function Shell() {
               <Icon size={18} /> {label}
             </NavLink>
           ))}
+          <a href="https://kntech.site/" target="_blank" rel="noreferrer" className="nav-item">
+            <ExternalLink size={18} /> Liên hệ admin
+          </a>
           <div className={showLegal ? 'legal-dropdown open' : 'legal-dropdown'}>
             <button className="nav-item legal-toggle" type="button" onClick={() => setShowLegal((v) => !v)}>
               <FileText size={18} /> Pháp lý <ChevronDown size={16} />

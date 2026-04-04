@@ -22,6 +22,12 @@ const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_DIMENSION = 1600;
 const CONSENT_KEY = 'kntech-ai-data-consent';
 const CONSENT_SNOOZE_KEY = 'kntech-ai-data-consent-snooze-until';
+const PROMPT_SUGGESTIONS = [
+  'AI là gì?',
+  'Chủ là ai?',
+  'Trần Khôi Nguyên là ai?',
+  'KNTech là gì?'
+] as const;
 
 function responseText(response: any) {
   const detail = String(response?.du_lieu?.giai_thich || '').trim();
@@ -418,6 +424,19 @@ export function HoiAIPage() {
           ) : dataConsent ? (
             <div className="note-box">{webAppConfig.aiConsoleConsentAcceptedNote}</div>
           ) : null}
+
+          <div className="ai-suggestion-row">
+            {PROMPT_SUGGESTIONS.map((item) => (
+              <button
+                key={item}
+                className="ai-suggestion-chip"
+                type="button"
+                onClick={() => setQuestion(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
 
           <textarea className="textarea" placeholder="Nhập câu hỏi hoặc gửi ảnh bài tập..." value={question} onChange={(e) => setQuestion(e.target.value)} />
           <div className="row-between wrap-mobile">

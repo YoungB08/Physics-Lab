@@ -11,6 +11,7 @@ export function Footer() {
         </div>
       </div>
       <div className="footer-links">
+        <a href="https://kntech.site/" target="_blank" rel="noreferrer">Liên hệ admin</a>
         <Link to="/dieu-khoan">Điều khoản sử dụng</Link>
         <Link to="/ban-quyen">Bản quyền & tài nguyên</Link>
       </div>

@@ -92,6 +92,15 @@ export function PhongThiPageClean() {
       const times = data.attempt?.chiTietJson?.questionTimes ?? {};
       setSelected(answers);
       setQuestionTimes(times);
+      const attemptStatus = String(data.attempt?.chiTietJson?.status ?? '');
+      if (attemptStatus === 'SUBMITTED' || attemptStatus === 'FORCE_STOPPED') {
+        setSubmitted(data.attempt);
+        setWarning(
+          attemptStatus === 'FORCE_STOPPED'
+            ? (data.attempt?.chiTietJson?.forcedStopReason || 'Bài làm đã bị khóa do vi phạm quy định phòng thi.')
+            : 'Bài làm này đã được nộp.'
+        );
+      }
       currentRef.current = data.exam?.questions?.[0]?.id ?? '';
       const startedAt = new Date(data.attempt?.chiTietJson?.startedAt || Date.now()).getTime();
       const duration = Number(data.exam?.thoiGianPhut ?? 0) * 60;
@@ -165,11 +174,9 @@ export function PhongThiPageClean() {
     };
     const onSelect = (e: Event) => {
       e.preventDefault();
-      pushIntegrity('selection-blocked');
     };
     const onDrag = (e: Event) => {
       e.preventDefault();
-      pushIntegrity('drag-blocked');
     };
     const onBlur = () => pushIntegrity('blur-window');
     const onKey = (e: KeyboardEvent) => {
