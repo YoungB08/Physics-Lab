@@ -1009,6 +1009,9 @@ export async function taoDeThi(payload: {
           excludedStemFingerprints: excludedStems
         }
       }, payload.giaoVienId);
+      if ((payload.providerAI ?? 'auto') === 'gpt' && aiResult.nha_cung_cap !== 'gpt') {
+        throw new HttpError(503, 'Không thể tạo đề bằng GPT lúc này. Vui lòng kiểm tra OPENAI_API_KEY hoặc thử lại sau.');
+      }
 
       const generatedDrafts = extractStructuredAiQuestions(aiResult, requestCount, topic, payload.mucDo);
       const generated = generatedDrafts

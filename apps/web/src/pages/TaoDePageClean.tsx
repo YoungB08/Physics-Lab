@@ -235,7 +235,7 @@ export function TaoDePageClean() {
         fullScreenRequired: form.antiCheatEnabled ? form.fullScreenRequired : false,
         strictAntiCheat: form.antiCheatEnabled ? form.strictAntiCheat : false,
         cheDo: 'AI',
-        providerAI: 'auto'
+        providerAI: 'gpt'
       });
       const nextDraft = mapToDraft(res?.de || res);
       setDraft(nextDraft);

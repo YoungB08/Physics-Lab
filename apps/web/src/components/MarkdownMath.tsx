@@ -67,11 +67,12 @@ function normalizeMathSource(input: string) {
 function isStandaloneMathExpression(text: string) {
   const trimmed = text.trim();
   if (!trimmed) return false;
+  const hasLatexCommand = /\\[a-zA-Z]+/.test(trimmed);
   if (trimmed.includes('$') || trimmed.includes('\\(') || trimmed.includes('\\[')) return false;
-  if (/[:;]/.test(trimmed)) return false;
-  if (!/[=^_]/.test(trimmed) && !/\([^)]+\)\s*\/\s*\([^)]+\)/.test(trimmed)) return false;
-  if (/[^A-Za-z0-9\s()+\-*/.=,]/.test(trimmed)) return false;
-  return /[A-Za-z]/.test(trimmed);
+  if (/[:;]/.test(trimmed) && !hasLatexCommand) return false;
+  if (!/[=^_]/.test(trimmed) && !/\([^)]+\)\s*\/\s*\([^)]+\)/.test(trimmed) && !hasLatexCommand) return false;
+  if (!hasLatexCommand && /[^A-Za-z0-9\s()+\-*/.=,\\{}[\]^_|]/.test(trimmed)) return false;
+  return hasLatexCommand || /[A-Za-z]/.test(trimmed);
 }
 
 function isGarbageItem(text: string) {
