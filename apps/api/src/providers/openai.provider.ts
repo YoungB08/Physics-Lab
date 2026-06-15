@@ -138,36 +138,62 @@ export class OpenAIProvider implements AIProvider {
     const started = Date.now();
     const isQuestionTask = input.loaiTacVu === 'tao_cau_hoi';
     const amount = Math.max(1, Number(input.boCanh?.soLuong ?? 5));
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: env.OPENAI_MODEL,
-        instructions: isQuestionTask ? questionGenerationInstructions(input) : systemInstructions(input),
-        input: buildOpenAIInput(input),
-        max_output_tokens: 700,
-        temperature: input.boCanh?.chatMode === 'lesson_1_1' ? 0.7 : 0.35,
-        text: isQuestionTask
-          ? {
-              format: {
-                type: 'json_schema',
-                name: 'generated_question_set',
-                schema: questionSetJsonSchema(amount),
-                strict: true
+    const requestOpenAI = async (maxOutputTokens: number) => {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: env.OPENAI_MODEL,
+          instructions: isQuestionTask ? questionGenerationInstructions(input) : systemInstructions(input),
+          input: buildOpenAIInput(input),
+          max_output_tokens: maxOutputTokens,
+          temperature: input.boCanh?.chatMode === 'lesson_1_1' ? 0.7 : 0.35,
+          text: isQuestionTask
+            ? {
+                format: {
+                  type: 'json_schema',
+                  name: 'generated_question_set',
+                  schema: questionSetJsonSchema(amount),
+                  strict: true
+                }
               }
-            }
-          : { format: { type: 'text' } }
-      })
-    });
-    const json: any = await response.json();
-    if (!response.ok) {
-      throw new Error(json?.error?.message || 'OpenAI request failed');
+            : { format: { type: 'text' } }
+        })
+      });
+      const json: any = await response.json();
+      if (!response.ok) {
+        throw new Error(json?.error?.message || 'OpenAI request failed');
+      }
+      return json;
+    };
+
+    const baseMaxOutputTokens = isQuestionTask
+      ? Math.min(10000, Math.max(2200, amount * 700))
+      : 700;
+    let json: any = await requestOpenAI(baseMaxOutputTokens);
+    if (isQuestionTask && json?.incomplete_details?.reason === 'max_output_tokens') {
+      const retryMaxOutputTokens = Math.min(12000, baseMaxOutputTokens + Math.max(1800, amount * 500));
+      json = await requestOpenAI(retryMaxOutputTokens);
     }
+
     if (isQuestionTask) {
-      const payload = normalizeStructuredQuestionPayload(JSON.parse(extractOpenAIText(json) || '{}'));
+      if (json?.incomplete_details?.reason) {
+        throw new Error(`OpenAI incomplete response: ${json.incomplete_details.reason}`);
+      }
+      const rawText = extractOpenAIText(json);
+      if (!rawText) {
+        throw new Error('OpenAI không trả về nội dung JSON cho tác vụ tạo câu hỏi.');
+      }
+      let parsedPayload: any = {};
+      try {
+        parsedPayload = JSON.parse(rawText);
+      } catch {
+        throw new Error('OpenAI trả về JSON chưa hoàn chỉnh cho tác vụ tạo đề.');
+      }
+      const payload = normalizeStructuredQuestionPayload(parsedPayload);
       return {
         loai_tac_vu: input.loaiTacVu,
         nha_cung_cap: 'gpt',
